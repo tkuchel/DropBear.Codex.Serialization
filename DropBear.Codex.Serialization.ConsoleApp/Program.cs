@@ -1,4 +1,5 @@
-﻿using DropBear.Codex.Serialization.Enums;
+﻿using DropBear.Codex.Core.ReturnTypes;
+using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,8 +35,17 @@ internal class Program
         };
 
         var json = await dataSerializer.SerializeJsonAsync(data, CompressionOption.Compressed, EncodingOption.Base64);
-        
-        var messagePack = await dataSerializer.SerializeMessagePackAsync(data, CompressionOption.Compressed);
+
+        var messagePackCheck = await dataSerializer.IsMessagePackSerializable<TestData>();
+        var messagePack = default(Result<byte[]>);
+        if (messagePackCheck.Value)
+        {
+            messagePack = await dataSerializer.SerializeMessagePackAsync(data, CompressionOption.Compressed);
+        }else
+        {
+            Console.WriteLine("Type is not serializable with MessagePack");
+        }
+
         
         var memoryPack = await dataSerializer.SerializeMemoryPackAsync(data, CompressionOption.Compressed);
 
@@ -93,16 +103,17 @@ internal class Program
         services.AddDataSerializationServices();
     }
 
-    [MessagePackObject]
-    private class TestData
-    {
-        [Key(0)]
-        public int Id { get; set; }
-       
-        [Key(1)]
-        public string Name { get; set; }
-        
-        [Key(2)]
-        public DateTime Created { get; set; }
     }
+    
+[MessagePackObject]
+public class TestData //TODO: This has to be public for messagepack to work, need to add a check for this as part of the messagepackchecker method also this cannot be a class within a class.
+{
+    [Key(0)]
+    public int Id { get; set; }
+       
+    [Key(1)]
+    public string Name { get; set; }
+        
+    [Key(2)]
+    public DateTime Created { get; set; }
 }

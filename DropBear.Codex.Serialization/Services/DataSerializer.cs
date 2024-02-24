@@ -15,9 +15,10 @@ public class DataSerializer : IDataSerializer
     private readonly ILogger<DataSerializer> _logger;
     private readonly IMemoryPackSerializer _memoryPackSerializer;
     private readonly IMessagePackSerializer _messagePackSerializer;
+    private readonly IMessagePackSerializableChecker _messagePackSerializableChecker;
 
     public DataSerializer(ILogger<DataSerializer> logger, IJsonSerializer jsonSerializer,
-        IMessagePackSerializer messagePackSerializer, IMemoryPackSerializer memoryPackSerializer)
+        IMessagePackSerializer messagePackSerializer, IMemoryPackSerializer memoryPackSerializer, IMessagePackSerializableChecker messagePackSerializableChecker)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
         _jsonSerializer = jsonSerializer ??
@@ -28,6 +29,10 @@ public class DataSerializer : IDataSerializer
         _memoryPackSerializer = memoryPackSerializer ??
                                 throw new ArgumentNullException(nameof(memoryPackSerializer),
                                     "MemoryPack Serializer cannot be null.");
+        
+        _messagePackSerializableChecker = messagePackSerializableChecker ??
+                                         throw new ArgumentNullException(nameof(messagePackSerializableChecker),
+                                             "MessagePack Serializable Checker cannot be null.");
     }
 
     /// <inheritdoc />
@@ -83,5 +88,12 @@ public class DataSerializer : IDataSerializer
     {
         // Directly return Task without unnecessary await
         return _memoryPackSerializer.DeserializeAsync<T>(data, compressionOption);
+    }
+    
+    /// <inheritdoc />
+    public  Task<Result<bool>> IsMessagePackSerializable<T>() where T : class
+    {
+        var result = _messagePackSerializableChecker.IsMessagePackSerializable<T>();
+        return Task.FromResult(result);
     }
 }
