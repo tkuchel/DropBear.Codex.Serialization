@@ -1,6 +1,7 @@
 ﻿using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
+using MemoryPack;
 using MessagePack;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -33,6 +34,14 @@ internal class Program
             Name = "Test Data",
             Created = DateTime.UtcNow
         };
+        
+        // Serialize and deserialize some data MemoryPack
+        var memoryPackData = new MemoryPackTestData
+        {
+            Id = 1,
+            Name = "Test Data",
+            Created = DateTime.UtcNow
+        };
 
         var json = await dataSerializer.SerializeJsonAsync(data, CompressionOption.Compressed, EncodingOption.Base64);
 
@@ -47,7 +56,7 @@ internal class Program
         }
 
         
-        var memoryPack = await dataSerializer.SerializeMemoryPackAsync(data, CompressionOption.Compressed);
+        var memoryPack = await dataSerializer.SerializeMemoryPackAsync(memoryPackData, CompressionOption.Compressed);
 
         if (json.IsFailure)
         {
@@ -71,7 +80,7 @@ internal class Program
         
         var deserializedMessagePackData = await dataSerializer.DeserializeMessagePackAsync<TestData>(messagePack.Value, CompressionOption.Compressed);
         
-        var deserializedMemoryPackData = await dataSerializer.DeserializeMemoryPackAsync<TestData>(memoryPack.Value, CompressionOption.Compressed);
+        var deserializedMemoryPackData = await dataSerializer.DeserializeMemoryPackAsync<MemoryPackTestData>(memoryPack.Value, CompressionOption.Compressed);
         
         if (deserializedData.IsFailure)
         {
@@ -104,6 +113,14 @@ internal class Program
     }
 
     }
+
+[MemoryPackable]
+public partial class MemoryPackTestData // TODO: we are going to need a similar checker to the messagepack one to make sure this attribute is added.
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public DateTime Created { get; set; }
+}
     
 [MessagePackObject]
 public class TestData //TODO: This has to be public for messagepack to work, need to add a check for this as part of the messagepackchecker method also this cannot be a class within a class.
