@@ -9,9 +9,9 @@ namespace DropBear.Codex.Serialization.Services;
 /// <summary>
 ///     Checks for MessagePack serializability of types based on MessagePack attributes.
 /// </summary>
-public class MessagePackSerializableChecker : IMessagePackSerializableChecker
+public class MessagePackSerializableChecker : ISerializableChecker
 {
-    private static readonly ConcurrentDictionary<Type, Result<bool>> _cache = new();
+    private static readonly ConcurrentDictionary<Type, Result<bool>> Cache = new();
 
     /// <summary>
     ///     Determines if a type is serializable by MessagePack by inspecting its attributes.
@@ -22,12 +22,16 @@ public class MessagePackSerializableChecker : IMessagePackSerializableChecker
     ///     A result indicating whether the type is serializable by MessagePack.
     ///     Success with true if serializable, otherwise Failure with a message.
     /// </returns>
-    public Result<bool> IsMessagePackSerializable<T>() where T : class
+    public Result<bool> IsSerializable<T>() where T : class
     {
         var type = typeof(T);
 
         // Return cached result if available
-        if (_cache.TryGetValue(type, out var cachedResult)) return cachedResult;
+        if (Cache.TryGetValue(type, out var cachedResult)) return cachedResult;
+
+        // Check if type is public and not nested
+        if (!type.IsPublic || type.IsNested)
+            return CacheAndReturn(type, Result<bool>.Failure($"Type '{type.Name}' must be public and not nested."));
 
         var attribute = type.GetCustomAttribute<MessagePackObjectAttribute>();
         if (attribute == null)
@@ -50,7 +54,7 @@ public class MessagePackSerializableChecker : IMessagePackSerializableChecker
     /// <returns>The result of the serializability check.</returns>
     private Result<bool> CacheAndReturn(Type type, Result<bool> result)
     {
-        _cache[type] = result;
+        Cache[type] = result;
         return result;
     }
 }

@@ -32,8 +32,24 @@ public static class ServiceCollectionExtensions
         // Registers the DataSerializer service that supports JSON, MessagePack, and MemoryPack serialization.
         services.AddSingleton<IDataSerializer, DataSerializer>();
         
-        // Registers the service for checking MessagePack serializability of types.
-        services.AddSingleton<IMessagePackSerializableChecker, MessagePackSerializableChecker>();
+        // Register the factory method
+        services.AddSingleton<Func<string, ISerializableChecker>>(serviceProvider => key =>
+        {
+            switch (key)
+            {
+                case "MessagePack":
+                    return serviceProvider.GetRequiredService<MessagePackSerializableChecker>();
+                case "MemoryPack":
+                    return serviceProvider.GetRequiredService<MemoryPackSerializableChecker>();
+                default:
+                    throw new KeyNotFoundException(); // Or return null, based on your error handling policy
+            }
+        });
+
+        // Register the checker implementations
+        services.AddSingleton<MessagePackSerializableChecker>();
+        services.AddSingleton<MemoryPackSerializableChecker>();
+
 
         return services;
     }

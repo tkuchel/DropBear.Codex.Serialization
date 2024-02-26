@@ -5,10 +5,16 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>DropBear.Codex.Serialization.ConsoleApp</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DropBear.Codex.Serialization\DropBear.Codex.Serialization.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ZLogger" Version="2.4.1" />
+      <PackageReference Include="ZLogger.MessagePack" Version="2.4.1" />
     </ItemGroup>
 
 </Project>
