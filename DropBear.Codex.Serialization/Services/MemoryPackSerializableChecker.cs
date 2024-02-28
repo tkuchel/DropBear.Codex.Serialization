@@ -8,14 +8,14 @@ namespace DropBear.Codex.Serialization.Services;
 
 public class MemoryPackSerializableChecker : ISerializableChecker
 {
-    private static readonly ConcurrentDictionary<Type, Result<bool>> _cache = new();
+    private static readonly ConcurrentDictionary<Type, Result<bool>> Cache = new();
 
     public Result<bool> IsSerializable<T>() where T : class
     {
         var type = typeof(T);
 
         // Return cached result if available
-        if (_cache.TryGetValue(type, out var cachedResult)) return cachedResult;
+        if (Cache.TryGetValue(type, out var cachedResult)) return cachedResult;
 
         // Check if type is public
         if (!type.IsPublic)
@@ -23,22 +23,12 @@ public class MemoryPackSerializableChecker : ISerializableChecker
 
         // Check for MemoryPackable attribute
         var attribute = type.GetCustomAttribute<MemoryPackableAttribute>();
-        if (attribute == null)
-            return CacheAndReturn(type, Result<bool>.Failure($"Type '{type.Name}' lacks MemoryPackableAttribute."));
-
-        // Since we cannot directly check if a class is partial, this is a limitation and should be documented.
-
-        return CacheAndReturn(type, Result<bool>.Success(true));
+        return CacheAndReturn(type, attribute is null ? Result<bool>.Failure($"Type '{type.Name}' lacks MemoryPackableAttribute.") : Result<bool>.Success(value: true));
     }
 
-    private Result<bool> CacheAndReturn(Type type, Result<bool> result)
+    private static Result<bool> CacheAndReturn(Type type, Result<bool> result)
     {
-        _cache[type] = result;
+        Cache[type] = result;
         return result;
     }
-}
-
-public interface IMemoryPackSerializableChecker
-{
-    Result<bool> IsMemoryPackSerializable<T>() where T : class;
 }

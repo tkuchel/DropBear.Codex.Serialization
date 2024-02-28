@@ -6,18 +6,18 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DropBear.Codex.Serialization;
 
 /// <summary>
-/// Extension methods for setting up serialization services in an <see cref="IServiceCollection" />.
+///     Extension methods for setting up serialization services in an <see cref="IServiceCollection" />.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds the data serialization services to the specified <see cref="IServiceCollection" />.
+    ///     Adds the data serialization services to the specified <see cref="IServiceCollection" />.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-    /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    /// <returns>The <see cref="IServiceCollection" /> so that additional calls can be chained.</returns>
     /// <remarks>
-    /// This method adds services for serializing and deserializing data using JSON, MessagePack, and MemoryPack.
-    /// It also registers a service for checking if types are serializable with MessagePack.
+    ///     This method adds services for serializing and deserializing data using JSON, MessagePack, and MemoryPack.
+    ///     It also registers a service for checking if types are serializable with MessagePack.
     /// </remarks>
     public static IServiceCollection AddDataSerializationServices(this IServiceCollection services)
     {
@@ -25,31 +25,27 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IJsonSerializer, JsonSerializer>();
         services.AddSingleton<IMessagePackSerializer, MessagePackSerializer>();
         services.AddSingleton<IMemoryPackSerializer, MemoryPackSerializer>();
-        
+
         // Register the compression helper
         services.AddSingleton<ICompressionHelper, CompressionHelper>();
-        
+
         // Registers the DataSerializer service that supports JSON, MessagePack, and MemoryPack serialization.
         services.AddSingleton<IDataSerializer, DataSerializer>();
-        
+
         // Register the factory method
         services.AddSingleton<Func<string, ISerializableChecker>>(serviceProvider => key =>
         {
-            switch (key)
+            return key switch
             {
-                case "MessagePack":
-                    return serviceProvider.GetRequiredService<MessagePackSerializableChecker>();
-                case "MemoryPack":
-                    return serviceProvider.GetRequiredService<MemoryPackSerializableChecker>();
-                default:
-                    throw new KeyNotFoundException(); // Or return null, based on your error handling policy
-            }
+                "MessagePack" => serviceProvider.GetRequiredService<MessagePackSerializableChecker>(),
+                "MemoryPack" => serviceProvider.GetRequiredService<MemoryPackSerializableChecker>(),
+                _ => throw new KeyNotFoundException()
+            };
         });
 
         // Register the checker implementations
         services.AddSingleton<MessagePackSerializableChecker>();
         services.AddSingleton<MemoryPackSerializableChecker>();
-
 
         return services;
     }

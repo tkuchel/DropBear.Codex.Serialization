@@ -29,10 +29,10 @@ public class JsonSerializer : IJsonSerializer
     }
 
     /// <inheritdoc />
-    public async Task<Result<string>> SerializeAsync<T>(T data, CompressionOption compressionOption,
+    public async Task<Result<string>?> SerializeAsync<T>(T data, CompressionOption compressionOption,
         EncodingOption encodingOption)
     {
-        if (data == null)
+        if (data is null)
             return LogAndReturnFailure<string>("SerializeJsonAsync: Input data is null.");
 
         try
@@ -40,7 +40,7 @@ public class JsonSerializer : IJsonSerializer
             var jsonData = JsonConvert.SerializeObject(data);
             var bytes = Encoding.UTF8.GetBytes(jsonData);
 
-            bytes = await HandleCompressionAsync(bytes, compressionOption);
+            bytes = await HandleCompressionAsync(bytes, compressionOption).ConfigureAwait(false);
             return Result<string>.Success(HandleEncoding(bytes, encodingOption));
         }
         catch (Exception ex)
@@ -50,8 +50,8 @@ public class JsonSerializer : IJsonSerializer
     }
 
     /// <inheritdoc />
-    public async Task<Result<T>> DeserializeAsync<T>(string data, CompressionOption compressionOption,
-        EncodingOption encodingOption)
+    public async Task<Result<T>?> DeserializeAsync<T>(string data, CompressionOption compressionOption,
+        EncodingOption encodingOption) where T : notnull
     {
         if (string.IsNullOrWhiteSpace(data))
             return LogAndReturnFailure<T>("DeserializeJsonAsync: Input string is null or whitespace.");
@@ -59,16 +59,25 @@ public class JsonSerializer : IJsonSerializer
         try
         {
             var bytes = HandleDecoding(data, encodingOption);
-            bytes = await HandleCompressionAsync(bytes, compressionOption, false);
+            bytes = await HandleCompressionAsync(bytes, compressionOption, false).ConfigureAwait(false);
 
-            var jsonData = Encoding.UTF8.GetString(bytes);
-            var result = JsonConvert.DeserializeObject<T>(jsonData);
-            return Result<T>.Success(result);
+            if (bytes is not null)
+            {
+                var jsonData = Encoding.UTF8.GetString(bytes);
+                var result = JsonConvert.DeserializeObject<T>(jsonData);
+                if (result is not null) return Result<T>.Success(result);
+            }
+            else
+            {
+                return LogAndReturnFailure<T>("DeserializeJsonAsync: Decoded bytes are null.");
+            }
         }
         catch (Exception ex)
         {
             return LogAndReturnFailure<T>($"JSON Deserialization failed: {ex.Message}");
         }
+
+        return LogAndReturnFailure<T>("DeserializeJsonAsync: Deserialization failed.");
     }
 
     /// <summary>
@@ -78,17 +87,16 @@ public class JsonSerializer : IJsonSerializer
     /// <param name="option">The compression option.</param>
     /// <param name="compress">Determines whether to compress or decompress the data.</param>
     /// <returns>A task that represents the asynchronous operation, containing the processed data.</returns>
-    private async Task<byte[]?> HandleCompressionAsync(byte[]? data, CompressionOption option, bool compress = true)
-    {
-        return option switch
+    private async Task<byte[]?> HandleCompressionAsync(byte[]? data, CompressionOption option, bool compress = true) =>
+        option switch
         {
             CompressionOption.Compressed => compress
                 ? await _compressionHelper.CompressAsync(data, CompressionType.Brotli)
-                : await _compressionHelper.DecompressAsync(data, CompressionType.Brotli),
+                    .ConfigureAwait(false)
+                : await _compressionHelper.DecompressAsync(data, CompressionType.Brotli).ConfigureAwait(false),
             CompressionOption.None => data,
             _ => throw new ArgumentException("Invalid compression option.", nameof(option))
         };
-    }
 
     /// <summary>
     ///     Handles encoding of byte data to a string based on the specified encoding option.
@@ -96,14 +104,17 @@ public class JsonSerializer : IJsonSerializer
     /// <param name="data">The byte array to encode.</param>
     /// <param name="option">The encoding option.</param>
     /// <returns>The encoded string.</returns>
-    private string HandleEncoding(byte[]? data, EncodingOption option)
+    private static string HandleEncoding(byte[]? data, EncodingOption option)
     {
-        return option switch
-        {
-            EncodingOption.Base64 => Convert.ToBase64String(data),
-            EncodingOption.Plain => Encoding.UTF8.GetString(data),
-            _ => throw new ArgumentException("Invalid encoding option.", nameof(option))
-        };
+        if (data is not null)
+            return option switch
+            {
+                EncodingOption.Base64 => Convert.ToBase64String(data),
+                EncodingOption.Plain => Encoding.UTF8.GetString(data),
+                _ => throw new ArgumentException("Invalid encoding option.", nameof(option))
+            };
+
+        throw new ArgumentNullException(nameof(data), "Data cannot be null.");
     }
 
     /// <summary>
@@ -112,15 +123,13 @@ public class JsonSerializer : IJsonSerializer
     /// <param name="data">The string to decode.</param>
     /// <param name="option">The encoding option.</param>
     /// <returns>The decoded byte array.</returns>
-    private byte[]? HandleDecoding(string data, EncodingOption option)
-    {
-        return option switch
+    private static byte[] HandleDecoding(string data, EncodingOption option) =>
+        option switch
         {
             EncodingOption.Base64 => Convert.FromBase64String(data),
             EncodingOption.Plain => Encoding.UTF8.GetBytes(data),
             _ => throw new ArgumentException("Invalid encoding option.", nameof(option))
         };
-    }
 
     /// <summary>
     ///     Logs an error message and returns a failure result.
@@ -128,9 +137,16 @@ public class JsonSerializer : IJsonSerializer
     /// <typeparam name="T">The type of the result.</typeparam>
     /// <param name="message">The error message to log.</param>
     /// <returns>A failure result containing the error message.</returns>
-    private Result<T> LogAndReturnFailure<T>(string message)
+    private Result<T>? LogAndReturnFailure<T>(string? message) where T : notnull
     {
-        _logger.LogError(message);
+#pragma warning disable RS0030
+#pragma warning disable CA1848
+        if (message is null) return null;
+#pragma warning disable CA2254
+        _logger.LogError($"{message}");
+#pragma warning restore CA2254
+#pragma warning restore CA1848
+#pragma warning restore RS0030
         return Result<T>.Failure(message);
     }
 }

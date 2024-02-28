@@ -6,5 +6,5 @@
 public enum CompressionType
 {
     Brotli,
-    LZ4
+    Lz4,
 }

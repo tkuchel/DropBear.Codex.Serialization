@@ -1,13 +1,10 @@
-﻿using DropBear.Codex.Serialization.Enums;
+﻿using System.IO.Compression;
+using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
-
-namespace DropBear.Codex.Serialization.Helpers;
-
-using System.IO.Compression;
-
 using K4os.Compression.LZ4;
 using K4os.Compression.LZ4.Streams;
 
+namespace DropBear.Codex.Serialization.Helpers;
 
 /// <summary>
 ///     Provides methods for compressing and decompressing data using various compression algorithms.
@@ -22,15 +19,13 @@ public class CompressionHelper : ICompressionHelper
     /// <param name="compressionLevel">The compression level.</param>
     /// <returns>The compressed data.</returns>
     public async Task<byte[]?> CompressAsync(byte[]? data, CompressionType compressionType,
-        CompressionLevel compressionLevel = CompressionLevel.Fastest)
-    {
-        return compressionType switch
+        CompressionLevel compressionLevel = CompressionLevel.Fastest) =>
+        compressionType switch
         {
-            CompressionType.Brotli => await CompressWithBrotliAsync(data, compressionLevel),
-            CompressionType.LZ4 => CompressWithLZ4(data, compressionLevel),
+            CompressionType.Brotli => await CompressWithBrotliAsync(data, compressionLevel).ConfigureAwait(false),
+            CompressionType.Lz4 => CompressWithLz4(data, compressionLevel),
             _ => throw new ArgumentOutOfRangeException(nameof(compressionType), "Unsupported compression type.")
         };
-    }
 
     /// <summary>
     ///     Asynchronously decompresses data using the specified compression type.
@@ -38,29 +33,31 @@ public class CompressionHelper : ICompressionHelper
     /// <param name="data">The data to decompress.</param>
     /// <param name="compressionType">The compression algorithm used during compression.</param>
     /// <returns>The decompressed data.</returns>
-    public async Task<byte[]?> DecompressAsync(byte[]? data, CompressionType compressionType)
-    {
-        return compressionType switch
+    public async Task<byte[]?> DecompressAsync(byte[]? data, CompressionType compressionType) =>
+        compressionType switch
         {
-            CompressionType.Brotli => await DecompressWithBrotliAsync(data),
-            CompressionType.LZ4 => DecompressWithLZ4(data),
+            CompressionType.Brotli => await DecompressWithBrotliAsync(data).ConfigureAwait(false),
+            CompressionType.Lz4 => DecompressWithLz4(data),
             _ => throw new ArgumentOutOfRangeException(nameof(compressionType), "Unsupported compression type.")
         };
-    }
 
-    private async Task<byte[]?> CompressWithBrotliAsync(byte[]? data, CompressionLevel compressionLevel)
+    private static async Task<byte[]?> CompressWithBrotliAsync(byte[]? data, CompressionLevel compressionLevel)
     {
-        await using var output = new MemoryStream();
-        // Use BrotliStream for compression. The compression level is cast from the System.IO.Compression enum to match Brotli's expectations.
-        await using (var compressStream = new BrotliStream(output, compressionLevel, true))
+        var output = new MemoryStream();
+        await using (output.ConfigureAwait(false))
         {
-            await compressStream.WriteAsync(data, 0, data.Length);
-        }
+            // Use BrotliStream for compression. The compression level is cast from the System.IO.Compression enum to match Brotli's expectations.
+            var compressStream = new BrotliStream(output, compressionLevel, true);
+            await using (compressStream.ConfigureAwait(false))
+            {
+                await compressStream.WriteAsync(data).ConfigureAwait(false);
+            }
 
-        return output.ToArray();
+            return output.ToArray();
+        }
     }
 
-    private byte[]? CompressWithLZ4(byte[]? data, CompressionLevel compressionLevel)
+    private static byte[] CompressWithLz4(byte[]? data, CompressionLevel compressionLevel)
     {
         var settings = new LZ4EncoderSettings
         {
@@ -71,45 +68,58 @@ public class CompressionHelper : ICompressionHelper
         using var output = new MemoryStream();
         using (var encoder = LZ4Stream.Encode(output, settings))
         {
-            encoder.Write(data, 0, data.Length);
+            if (data is not null) encoder.Write(data, 0, data.Length);
         }
 
         return output.ToArray();
     }
 
-    private async Task<byte[]?> DecompressWithBrotliAsync(byte[]? data)
+    private static async Task<byte[]?> DecompressWithBrotliAsync(byte[]? data)
     {
-        await using var input = new MemoryStream(data);
-        await using var output = new MemoryStream();
-        await using (var decompressStream = new BrotliStream(input, CompressionMode.Decompress))
+        if (data is not null)
         {
-            await decompressStream.CopyToAsync(output);
+            var input = new MemoryStream(data);
+            await using (input.ConfigureAwait(false))
+            {
+#pragma warning disable MA0004
+                await using var output = new MemoryStream();
+#pragma warning restore MA0004
+                var decompressStream = new BrotliStream(input, CompressionMode.Decompress);
+                await using (decompressStream.ConfigureAwait(false))
+                {
+                    await decompressStream.CopyToAsync(output).ConfigureAwait(false);
+                }
+
+                return output.ToArray();
+            }
         }
 
-        return output.ToArray();
+        return Array.Empty<byte>();
     }
 
-    private byte[]? DecompressWithLZ4(byte[]? data)
+    private static byte[] DecompressWithLz4(byte[]? data)
     {
-        using var input = new MemoryStream(data);
-        using var output = new MemoryStream();
-        using (var decoder = LZ4Stream.Decode(input))
+        if (data is not null)
         {
-            decoder.CopyTo(output);
+            using var input = new MemoryStream(data);
+            using var output = new MemoryStream();
+            using (var decoder = LZ4Stream.Decode(input))
+            {
+                decoder.CopyTo(output);
+            }
+
+            return output.ToArray();
         }
 
-        return output.ToArray();
+        return Array.Empty<byte>();
     }
 
-    private LZ4Level MapCompressionLevel(CompressionLevel compressionLevel)
-    {
+    private static LZ4Level MapCompressionLevel(CompressionLevel compressionLevel) =>
         // Maps the generic CompressionLevel to LZ4's specific compression levels.
-        return compressionLevel switch
+        compressionLevel switch
         {
             CompressionLevel.Optimal => LZ4Level.L12_MAX, // Maps to the maximum compression level in LZ4.
             CompressionLevel.Fastest => LZ4Level.L00_FAST, // Maps to the fastest compression level in LZ4.
             _ => LZ4Level.L03_HC // Default case uses a moderate compression level.
         };
-    }
 }
-

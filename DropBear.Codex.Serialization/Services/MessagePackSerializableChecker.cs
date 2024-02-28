@@ -7,7 +7,7 @@ using MessagePack;
 namespace DropBear.Codex.Serialization.Services;
 
 /// <summary>
-///     Checks for MessagePack serializability of types based on MessagePack attributes.
+///     Checks for MessagePack Serializability of types based on MessagePack attributes.
 /// </summary>
 public class MessagePackSerializableChecker : ISerializableChecker
 {
@@ -52,7 +52,7 @@ public class MessagePackSerializableChecker : ISerializableChecker
     /// <param name="type">The type that was checked.</param>
     /// <param name="result">The result of the check.</param>
     /// <returns>The result of the serializability check.</returns>
-    private Result<bool> CacheAndReturn(Type type, Result<bool> result)
+    private static Result<bool> CacheAndReturn(Type type, Result<bool> result)
     {
         Cache[type] = result;
         return result;

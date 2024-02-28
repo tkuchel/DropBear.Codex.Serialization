@@ -42,7 +42,7 @@ public class MemoryPackSerializer : IMemoryPackSerializer
             var bytes = MemoryPack.MemoryPackSerializer.Serialize(data);
 
             if (compressionOption == CompressionOption.Compressed)
-                bytes = await _compressionHelper.CompressAsync(bytes, CompressionType.LZ4, CompressionLevel.Optimal);
+                bytes = await _compressionHelper.CompressAsync(bytes, CompressionType.Lz4, CompressionLevel.Optimal);
 
             return Result<byte[]>.Success(bytes);
         }
@@ -66,7 +66,7 @@ public class MemoryPackSerializer : IMemoryPackSerializer
         try
         {
             if (compressionOption == CompressionOption.Compressed)
-                data = await _compressionHelper.DecompressAsync(data, CompressionType.LZ4);
+                data = await _compressionHelper.DecompressAsync(data, CompressionType.Lz4);
 
             var result = MemoryPack.MemoryPackSerializer.Deserialize<T>(data);
             return Result<T>.Success(result);

@@ -11,14 +11,14 @@ public interface IDataSerializer
     /// <summary>
     ///     Serializes data to JSON format with optional compression and encoding.
     /// </summary>
-    Task<Result<string>> SerializeJsonAsync<T>(T data, CompressionOption compressionOption,
+    Task<Result<string>?> SerializeJsonAsync<T>(T data, CompressionOption compressionOption,
         EncodingOption encodingOption);
 
     /// <summary>
     ///     Deserializes data from JSON format with optional compression and decoding.
     /// </summary>
-    Task<Result<T>> DeserializeJsonAsync<T>(string data, CompressionOption compressionOption,
-        EncodingOption encodingOption);
+    Task<Result<T>?> DeserializeJsonAsync<T>(string data, CompressionOption compressionOption,
+        EncodingOption encodingOption) where T : notnull;
 
     /// <summary>
     ///     Serializes data to MessagePack format with optional compression.
@@ -28,7 +28,7 @@ public interface IDataSerializer
     /// <summary>
     ///     Deserializes data from MessagePack format with optional decompression.
     /// </summary>
-    Task<Result<T>> DeserializeMessagePackAsync<T>(byte[] data, CompressionOption compressionOption);
+    Task<Result<T>> DeserializeMessagePackAsync<T>(byte[] data, CompressionOption compressionOption) where T : notnull;
 
     /// <summary>
     ///     Serializes data to MemoryPack format with optional compression.
@@ -38,7 +38,7 @@ public interface IDataSerializer
     /// <summary>
     ///     Deserializes data from MemoryPack format with optional decompression.
     /// </summary>
-    Task<Result<T>> DeserializeMemoryPackAsync<T>(byte[] data, CompressionOption compressionOption);
+    Task<Result<T>> DeserializeMemoryPackAsync<T>(byte[] data, CompressionOption compressionOption) where T : notnull;
 
     /// <summary>
     ///     Determines if a type is serializable by MessagePack by inspecting its attributes.

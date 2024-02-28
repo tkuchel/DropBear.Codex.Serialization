@@ -3,6 +3,7 @@ using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
 using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace DropBear.Codex.Serialization.Services;
 
@@ -18,10 +19,8 @@ public class MessagePackSerializer : IMessagePackSerializer
     /// </summary>
     /// <param name="logger">The logger to use for logging error or information.</param>
     /// <exception cref="ArgumentNullException">Thrown if the logger is null.</exception>
-    public MessagePackSerializer(ILogger<MessagePackSerializer> logger)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
-    }
+    public MessagePackSerializer(ILogger<MessagePackSerializer> logger) => _logger =
+        logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
 
     /// <inheritdoc />
     public async Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption,
@@ -34,7 +33,7 @@ public class MessagePackSerializer : IMessagePackSerializer
             var options = GetSerializerOptions(compressionOption);
 
             using var memoryStream = new MemoryStream();
-            await MessagePack.MessagePackSerializer.SerializeAsync(memoryStream, data, options, cancellationToken);
+            await MessagePack.MessagePackSerializer.SerializeAsync(memoryStream, data, options, cancellationToken).ConfigureAwait(false);
             return Result<byte[]>.Success(memoryStream.ToArray());
         }
         catch (Exception ex)
@@ -45,7 +44,7 @@ public class MessagePackSerializer : IMessagePackSerializer
 
     /// <inheritdoc />
     public async Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) where T : notnull
     {
         if (data == null || data.Length == 0)
             return LogAndReturnFailure<T>("DeserializeAsync: Input data is null or empty.");
@@ -56,7 +55,7 @@ public class MessagePackSerializer : IMessagePackSerializer
 
             using var memoryStream = new MemoryStream(data);
             var result =
-                await MessagePack.MessagePackSerializer.DeserializeAsync<T>(memoryStream, options, cancellationToken);
+                await MessagePack.MessagePackSerializer.DeserializeAsync<T>(memoryStream, options, cancellationToken).ConfigureAwait(false);
             return Result<T>.Success(result);
         }
         catch (Exception ex)
@@ -68,10 +67,19 @@ public class MessagePackSerializer : IMessagePackSerializer
     /// <summary>
     ///     Logs the specified message as an error and returns a failure result.
     /// </summary>
-    private Result<T> LogAndReturnFailure<T>(string message)
+    private Result<T> LogAndReturnFailure<T>(string? message) where T : notnull
     {
-        _logger.LogError(message);
-        return Result<T>.Failure(message);
+#pragma warning disable CA1848
+        if (message is not null)
+        {
+            _logger.ZLogError($"{message}");
+#pragma warning restore CA1848
+            return Result<T>.Failure(message);
+        } else
+        {
+            _logger.ZLogError($"An error occurred during serialization or deserialization.");
+            return Result<T>.Failure("An error occurred during serialization or deserialization.");
+        }
     }
 
     /// <summary>
