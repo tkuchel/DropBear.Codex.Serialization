@@ -23,10 +23,10 @@ public class MessagePackSerializer : IMessagePackSerializer
         logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
 
     /// <inheritdoc />
-    public async Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption,
-        CancellationToken cancellationToken = default)
+    public async Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption,
+        CancellationToken cancellationToken = default) where T : notnull
     {
-        if (data == null) return LogAndReturnFailure<byte[]>("SerializeAsync: Input data is null.");
+        if (data is null) return LogAndReturnFailure<byte[]>("SerializeAsync: Input data is null.");
 
         try
         {
@@ -46,7 +46,7 @@ public class MessagePackSerializer : IMessagePackSerializer
     public async Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption,
         CancellationToken cancellationToken = default) where T : notnull
     {
-        if (data == null || data.Length == 0)
+        if (data is null || data.Length is 0)
             return LogAndReturnFailure<T>("DeserializeAsync: Input data is null or empty.");
 
         try

@@ -11,7 +11,7 @@ public interface IMessagePackSerializer
     /// <summary>
     /// Serializes an object to MessagePack format with optional compression.
     /// </summary>
-    Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption, CancellationToken cancellationToken = default);
+    Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption, CancellationToken cancellationToken = default) where T : notnull;
 
     /// <summary>
     /// Deserializes data from MessagePack format with optional decompression.

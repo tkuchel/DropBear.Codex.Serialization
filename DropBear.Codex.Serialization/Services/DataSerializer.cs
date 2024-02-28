@@ -39,7 +39,7 @@ public class DataSerializer(
 
     /// <inheritdoc />
     public Task<Result<string>?> SerializeJsonAsync<T>(T data, CompressionOption compressionOption,
-        EncodingOption encodingOption) =>
+        EncodingOption encodingOption) where T : notnull =>
         // Directly return Task without unnecessary await
         _jsonSerializer.SerializeAsync(data, compressionOption, encodingOption);
 
@@ -50,7 +50,7 @@ public class DataSerializer(
         _jsonSerializer.DeserializeAsync<T>(data, compressionOption, encodingOption);
 
     /// <inheritdoc />
-    public Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption) =>
+    public Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption) where T : notnull =>
         // Directly return Task without unnecessary await
         _messagePackSerializer.SerializeAsync(data, compressionOption);
 
@@ -67,7 +67,7 @@ public class DataSerializer(
     /// <param name="data">The data to serialize.</param>
     /// <param name="compressionOption">The compression option to apply.</param>
     /// <returns>A task that represents the asynchronous operation, containing the serialized data as a byte array.</returns>
-    public Task<Result<byte[]>> SerializeMemoryPackAsync<T>(T data, CompressionOption compressionOption) =>
+    public Task<Result<byte[]>> SerializeMemoryPackAsync<T>(T? data, CompressionOption compressionOption) where T : notnull =>
         // Directly return Task without unnecessary await
         _memoryPackSerializer.SerializeAsync(data, compressionOption);
 

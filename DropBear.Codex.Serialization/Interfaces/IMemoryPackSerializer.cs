@@ -11,7 +11,7 @@ public interface IMemoryPackSerializer
     /// <summary>
     /// Serializes an object to MemoryPack format with optional compression.
     /// </summary>
-    Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption);
+    Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption) where T : notnull;
 
     /// <summary>
     /// Deserializes data from MemoryPack format with optional decompression.

@@ -3,6 +3,7 @@ using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
 using Microsoft.Extensions.Logging;
+using ZLogger;
 
 namespace DropBear.Codex.Serialization.Services;
 
@@ -31,9 +32,9 @@ public class MemoryPackSerializer : IMemoryPackSerializer
     /// <inheritdoc />
     public async Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption) where T : notnull
     {
-        if (data == null)
+        if (data is null)
         {
-            _logger.LogWarning("SerializeAsync: Input data is null.");
+            _logger.ZLogWarning($"SerializeAsync: Input data is null.");
             return Result<byte[]>.Failure("Input data is null.");
         }
 
@@ -41,40 +42,44 @@ public class MemoryPackSerializer : IMemoryPackSerializer
         {
             var bytes = MemoryPack.MemoryPackSerializer.Serialize(data);
 
-            if (compressionOption == CompressionOption.Compressed)
-                bytes = await _compressionHelper.CompressAsync(bytes, CompressionType.Lz4, CompressionLevel.Optimal);
+            if (compressionOption is CompressionOption.Compressed)
+                bytes = await _compressionHelper.CompressAsync(bytes, CompressionType.Lz4, CompressionLevel.Optimal).ConfigureAwait(false);
 
-            return Result<byte[]>.Success(bytes);
+            if (bytes is not null) return Result<byte[]>.Success(bytes);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "MemoryPack Serialization failed.");
+            _logger.ZLogError(ex, $"MemoryPack Serialization failed.");
             return Result<byte[]>.Failure($"MemoryPack Serialization failed: {ex.Message}");
         }
+        
+        return Result<byte[]>.Failure("MemoryPack Serialization failed.");
     }
 
     /// <inheritdoc />
     public async Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption)
         where T : notnull
     {
-        if (data == null || data.Length == 0)
+        if (data is null || data.Length is 0)
         {
-            _logger.LogWarning("DeserializeAsync: Input data is null or empty.");
+            _logger.ZLogWarning($"DeserializeAsync: Input data is null or empty.");
             return Result<T>.Failure("Input data is null or empty.");
         }
 
         try
         {
-            if (compressionOption == CompressionOption.Compressed)
-                data = await _compressionHelper.DecompressAsync(data, CompressionType.Lz4);
+            if (compressionOption is CompressionOption.Compressed)
+                data = await _compressionHelper.DecompressAsync(data, CompressionType.Lz4).ConfigureAwait(false);
 
             var result = MemoryPack.MemoryPackSerializer.Deserialize<T>(data);
-            return Result<T>.Success(result);
+            if (result is not null) return Result<T>.Success(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "MemoryPack Deserialization failed.");
+            _logger.ZLogError(ex, $"MemoryPack Deserialization failed.");
             return Result<T>.Failure($"MemoryPack Deserialization failed: {ex.Message}");
         }
+        
+        return Result<T>.Failure("MemoryPack Deserialization failed.");
     }
 }
