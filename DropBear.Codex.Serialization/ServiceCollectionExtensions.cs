@@ -22,9 +22,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDataSerializationServices(this IServiceCollection services)
     {
         // Registers the different serialization services.
-        services.AddSingleton<IJsonSerializer, JsonSerializer>();
-        services.AddSingleton<IMessagePackSerializer, MessagePackSerializer>();
-        services.AddSingleton<IMemoryPackSerializer, MemoryPackSerializer>();
+        services.AddSingleton<IJsonSerializer, CustomJsonSerializer>();
+        services.AddSingleton<IMessagePackSerializer, CustomMessagePackSerializer>();
+        services.AddSingleton<IMemoryPackSerializer, CustomMemoryPackSerializer>();
 
         // Register the compression helper
         services.AddSingleton<ICompressionHelper, CompressionHelper>();
@@ -37,14 +37,14 @@ public static class ServiceCollectionExtensions
         {
             return key switch
             {
-                "MessagePack" => serviceProvider.GetRequiredService<MessagePackSerializableChecker>(),
+                "MessagePack" => serviceProvider.GetRequiredService<MessagePackCompatibilityChecker>(),
                 "MemoryPack" => serviceProvider.GetRequiredService<MemoryPackSerializableChecker>(),
                 _ => throw new KeyNotFoundException()
             };
         });
 
         // Register the checker implementations
-        services.AddSingleton<MessagePackSerializableChecker>();
+        services.AddSingleton<MessagePackCompatibilityChecker>();
         services.AddSingleton<MemoryPackSerializableChecker>();
 
         return services;

@@ -3,24 +3,25 @@ using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using ServiceStack.Text;
+using ZLogger;
 
 namespace DropBear.Codex.Serialization.Services;
 
 /// <summary>
 ///     Provides JSON serialization and deserialization services with optional compression and encoding.
 /// </summary>
-public class JsonSerializer : IJsonSerializer
+public class CustomJsonSerializer : IJsonSerializer
 {
     private readonly ICompressionHelper _compressionHelper;
-    private readonly ILogger<JsonSerializer> _logger;
+    private readonly ILogger<CustomJsonSerializer> _logger;
 
     /// <summary>
     ///     Constructs a JsonSerializer with logging and compression capabilities.
     /// </summary>
     /// <param name="logger">Logger instance for logging.</param>
     /// <param name="compressionHelper">Compression helper for handling data compression and decompression.</param>
-    public JsonSerializer(ILogger<JsonSerializer> logger, ICompressionHelper compressionHelper)
+    public CustomJsonSerializer(ILogger<CustomJsonSerializer> logger, ICompressionHelper compressionHelper)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
         _compressionHelper = compressionHelper ??
@@ -32,14 +33,13 @@ public class JsonSerializer : IJsonSerializer
     public async Task<Result<string>?> SerializeAsync<T>(T data, CompressionOption compressionOption,
         EncodingOption encodingOption)
     {
-        if (data is null)
-            return LogAndReturnFailure<string>("SerializeJsonAsync: Input data is null.");
+        if (data == null)
+            return LogAndReturnFailure<string>("SerializeAsync: Input data is null.");
 
         try
         {
-            var jsonData = JsonConvert.SerializeObject(data);
+            var jsonData = JsonSerializer.SerializeToString(data);
             var bytes = Encoding.UTF8.GetBytes(jsonData);
-
             bytes = await HandleCompressionAsync(bytes, compressionOption).ConfigureAwait(false);
             return Result<string>.Success(HandleEncoding(bytes, encodingOption));
         }
@@ -54,7 +54,7 @@ public class JsonSerializer : IJsonSerializer
         EncodingOption encodingOption) where T : notnull
     {
         if (string.IsNullOrWhiteSpace(data))
-            return LogAndReturnFailure<T>("DeserializeJsonAsync: Input string is null or whitespace.");
+            return LogAndReturnFailure<T>("DeserializeAsync: Input string is null or whitespace.");
 
         try
         {
@@ -64,12 +64,12 @@ public class JsonSerializer : IJsonSerializer
             if (bytes is not null)
             {
                 var jsonData = Encoding.UTF8.GetString(bytes);
-                var result = JsonConvert.DeserializeObject<T>(jsonData);
+                var result = JsonSerializer.DeserializeFromString<T>(jsonData);
                 if (result is not null) return Result<T>.Success(result);
             }
             else
             {
-                return LogAndReturnFailure<T>("DeserializeJsonAsync: Decoded bytes are null.");
+                return LogAndReturnFailure<T>("DeserializeAsync: Decoded bytes are null.");
             }
         }
         catch (Exception ex)
@@ -77,7 +77,7 @@ public class JsonSerializer : IJsonSerializer
             return LogAndReturnFailure<T>($"JSON Deserialization failed: {ex.Message}");
         }
 
-        return LogAndReturnFailure<T>("DeserializeJsonAsync: Deserialization failed.");
+        return LogAndReturnFailure<T>("DeserializeAsync: Deserialization failed.");
     }
 
     /// <summary>
@@ -131,22 +131,10 @@ public class JsonSerializer : IJsonSerializer
             _ => throw new ArgumentException("Invalid encoding option.", nameof(option))
         };
 
-    /// <summary>
-    ///     Logs an error message and returns a failure result.
-    /// </summary>
-    /// <typeparam name="T">The type of the result.</typeparam>
-    /// <param name="message">The error message to log.</param>
-    /// <returns>A failure result containing the error message.</returns>
     private Result<T>? LogAndReturnFailure<T>(string? message) where T : notnull
     {
-#pragma warning disable RS0030
-#pragma warning disable CA1848
-        if (message is null) return null;
-#pragma warning disable CA2254
-        _logger.LogError($"{message}");
-#pragma warning restore CA2254
-#pragma warning restore CA1848
-#pragma warning restore RS0030
+        message ??= "Unknown error";
+        _logger.ZLogError($"{message}");
         return Result<T>.Failure(message);
     }
 }

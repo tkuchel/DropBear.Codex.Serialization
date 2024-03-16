@@ -28,7 +28,7 @@ public interface IDataSerializer
     /// <summary>
     ///     Deserializes data from MessagePack format with optional decompression.
     /// </summary>
-    Task<Result<T>> DeserializeMessagePackAsync<T>(byte[] data, CompressionOption compressionOption) where T : notnull;
+    Task<Result<T>> DeserializeMessagePackAsync<T>(byte[]? data, CompressionOption compressionOption) where T : notnull;
 
     /// <summary>
     ///     Serializes data to MemoryPack format with optional compression.
@@ -38,7 +38,7 @@ public interface IDataSerializer
     /// <summary>
     ///     Deserializes data from MemoryPack format with optional decompression.
     /// </summary>
-    Task<Result<T>> DeserializeMemoryPackAsync<T>(byte[] data, CompressionOption compressionOption) where T : notnull;
+    Task<Result<T>> DeserializeMemoryPackAsync<T>(byte[]? data, CompressionOption compressionOption) where T : notnull;
 
     /// <summary>
     ///     Determines if a type is serializable by MessagePack by inspecting its attributes.

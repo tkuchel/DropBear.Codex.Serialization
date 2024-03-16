@@ -8,91 +8,77 @@ namespace DropBear.Codex.Serialization.Services;
 ///     Implements serialization and deserialization for various data formats, including JSON, MessagePack, and MemoryPack.
 ///     Supports optional compression and encoding for JSON data format.
 /// </summary>
-public class DataSerializer(
-    IJsonSerializer jsonSerializer,
-    IMessagePackSerializer messagePackSerializer,
-    IMemoryPackSerializer memoryPackSerializer,
-    Func<string, ISerializableChecker> checkerFactory)
-    : IDataSerializer
+public class DataSerializer : IDataSerializer
 {
-    private readonly IJsonSerializer _jsonSerializer = jsonSerializer ??
-                                                       throw new ArgumentNullException(nameof(jsonSerializer),
-                                                           "JSON Serializer cannot be null.");
+    private readonly IJsonSerializer _jsonSerializer;
+    private readonly ISerializableChecker _memoryPackChecker;
+    private readonly IMemoryPackSerializer _memoryPackSerializer;
+    private readonly ISerializableChecker _messagePackChecker;
+    private readonly IMessagePackSerializer _messagePackSerializer;
 
-    private readonly ISerializableChecker _memoryPackChecker = checkerFactory("MemoryPack") ??
-                                                               throw new ArgumentNullException(nameof(checkerFactory),
-                                                                   "MemoryPack Checker cannot be null.");
-
-    private readonly IMemoryPackSerializer _memoryPackSerializer = memoryPackSerializer ??
-                                                                   throw new ArgumentNullException(
-                                                                       nameof(memoryPackSerializer),
-                                                                       "MemoryPack Serializer cannot be null.");
-
-    private readonly ISerializableChecker _messagePackChecker = checkerFactory("MessagePack") ??
-                                                                throw new ArgumentNullException(nameof(checkerFactory),
-                                                                    "MessagePack Checker cannot be null.");
-
-    private readonly IMessagePackSerializer _messagePackSerializer = messagePackSerializer ??
-                                                                     throw new ArgumentNullException(
-                                                                         nameof(messagePackSerializer),
-                                                                         "MessagePack Serializer cannot be null.");
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="DataSerializer" /> class.
+    /// </summary>
+    /// <param name="jsonSerializer">The JSON serializer.</param>
+    /// <param name="messagePackSerializer">The MessagePack serializer.</param>
+    /// <param name="memoryPackSerializer">The MemoryPack serializer.</param>
+    /// <param name="checkerFactory">A factory function to produce serializable checkers.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any argument is null.</exception>
+    public DataSerializer(
+        IJsonSerializer jsonSerializer,
+        IMessagePackSerializer messagePackSerializer,
+        IMemoryPackSerializer memoryPackSerializer,
+        Func<string, ISerializableChecker> checkerFactory)
+    {
+        _jsonSerializer = jsonSerializer ??
+                          throw new ArgumentNullException(nameof(jsonSerializer), "JSON Serializer cannot be null.");
+        _messagePackSerializer = messagePackSerializer ??
+                                 throw new ArgumentNullException(nameof(messagePackSerializer),
+                                     "MessagePack Serializer cannot be null.");
+        _memoryPackSerializer = memoryPackSerializer ??
+                                throw new ArgumentNullException(nameof(memoryPackSerializer),
+                                    "MemoryPack Serializer cannot be null.");
+        _memoryPackChecker = checkerFactory("MemoryPack") ?? throw new ArgumentNullException(nameof(checkerFactory),
+            "MemoryPack Checker factory invocation returned null.");
+        _messagePackChecker = checkerFactory("MessagePack") ?? throw new ArgumentNullException(nameof(checkerFactory),
+            "MessagePack Checker factory invocation returned null.");
+    }
 
     /// <inheritdoc />
     public Task<Result<string>?> SerializeJsonAsync<T>(T data, CompressionOption compressionOption,
         EncodingOption encodingOption) where T : notnull =>
-        // Directly return Task without unnecessary await
         _jsonSerializer.SerializeAsync(data, compressionOption, encodingOption);
 
     /// <inheritdoc />
     public Task<Result<T>?> DeserializeJsonAsync<T>(string data, CompressionOption compressionOption,
         EncodingOption encodingOption) where T : notnull =>
-        // Directly return Task without unnecessary await
         _jsonSerializer.DeserializeAsync<T>(data, compressionOption, encodingOption);
 
     /// <inheritdoc />
-    public Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption) where T : notnull =>
-        // Directly return Task without unnecessary await
+    public Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption)
+        where T : notnull =>
         _messagePackSerializer.SerializeAsync(data, compressionOption);
 
     /// <inheritdoc />
-    public Task<Result<T>> DeserializeMessagePackAsync<T>(byte[] data, CompressionOption compressionOption)
+    public Task<Result<T>> DeserializeMessagePackAsync<T>(byte[]? data, CompressionOption compressionOption)
         where T : notnull =>
-        // Directly return Task without unnecessary await
         _messagePackSerializer.DeserializeAsync<T>(data, compressionOption);
 
-    /// <summary>
-    ///     Serializes data to a MemoryPack byte array, with optional compression. Utilizes MemoryPack's built-in compression
-    ///     mechanism if supported.
-    /// </summary>
-    /// <param name="data">The data to serialize.</param>
-    /// <param name="compressionOption">The compression option to apply.</param>
-    /// <returns>A task that represents the asynchronous operation, containing the serialized data as a byte array.</returns>
-    public Task<Result<byte[]>> SerializeMemoryPackAsync<T>(T? data, CompressionOption compressionOption) where T : notnull =>
-        // Directly return Task without unnecessary await
+    /// <inheritdoc />
+    public Task<Result<byte[]>> SerializeMemoryPackAsync<T>(T? data, CompressionOption compressionOption)
+        where T : notnull =>
         _memoryPackSerializer.SerializeAsync(data, compressionOption);
 
-    /// <summary>
-    ///     Deserializes a MemoryPack byte array to the specified type, using MemoryPack's built-in decompression if supported.
-    /// </summary>
-    /// <param name="data">The byte array to deserialize.</param>
-    /// <param name="compressionOption">The compression option that was applied during serialization.</param>
-    /// <returns>A task that represents the asynchronous operation, containing the deserialized object of type T.</returns>
-    public Task<Result<T>> DeserializeMemoryPackAsync<T>(byte[] data, CompressionOption compressionOption)
+    /// <inheritdoc />
+    public Task<Result<T>> DeserializeMemoryPackAsync<T>(byte[]? data, CompressionOption compressionOption)
         where T : notnull =>
-        // Directly return Task without unnecessary await
         _memoryPackSerializer.DeserializeAsync<T>(data, compressionOption);
 
     /// <inheritdoc />
-    public Task<Result<bool>> IsMessagePackSerializable<T>() where T : class
-    {
-        var result = _messagePackChecker.IsSerializable<T>();
-        return Task.FromResult(result);
-    }
+    public Task<Result<bool>> IsMessagePackSerializable<T>() where T : class =>
+        Task.FromResult(_messagePackChecker.IsSerializable<T>());
 
     /// <inheritdoc />
-    public Task<Result<bool>> IsMemoryPackSerializable<T>() where T : class
-    {
-        var result = _memoryPackChecker.IsSerializable<T>();
-        return Task.FromResult(result);
-    }
+    public Task<Result<bool>> IsMemoryPackSerializable<T>() where T : class =>
+        Task.FromResult(_memoryPackChecker.IsSerializable<T>());
 }
