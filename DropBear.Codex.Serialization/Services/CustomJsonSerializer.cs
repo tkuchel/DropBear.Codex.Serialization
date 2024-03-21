@@ -1,10 +1,10 @@
 ﻿using System.Text;
+using Cysharp.Text;
+using DropBear.Codex.AppLogger.Interfaces;
 using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
-using Microsoft.Extensions.Logging;
 using ServiceStack.Text;
-using ZLogger;
 
 namespace DropBear.Codex.Serialization.Services;
 
@@ -14,14 +14,14 @@ namespace DropBear.Codex.Serialization.Services;
 public class CustomJsonSerializer : IJsonSerializer
 {
     private readonly ICompressionHelper _compressionHelper;
-    private readonly ILogger<CustomJsonSerializer> _logger;
+    private readonly IAppLogger<CustomJsonSerializer> _logger;
 
     /// <summary>
     ///     Constructs a JsonSerializer with logging and compression capabilities.
     /// </summary>
     /// <param name="logger">Logger instance for logging.</param>
     /// <param name="compressionHelper">Compression helper for handling data compression and decompression.</param>
-    public CustomJsonSerializer(ILogger<CustomJsonSerializer> logger, ICompressionHelper compressionHelper)
+    public CustomJsonSerializer(IAppLogger<CustomJsonSerializer> logger, ICompressionHelper compressionHelper)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
         _compressionHelper = compressionHelper ??
@@ -30,10 +30,10 @@ public class CustomJsonSerializer : IJsonSerializer
     }
 
     /// <inheritdoc />
-    public async Task<Result<string>?> SerializeAsync<T>(T data, CompressionOption compressionOption,
+    public async Task<Result<string>?> SerializeAsync<T>(T? data, CompressionOption compressionOption,
         EncodingOption encodingOption)
     {
-        if (data == null)
+        if (data is null)
             return LogAndReturnFailure<string>("SerializeAsync: Input data is null.");
 
         try
@@ -45,7 +45,7 @@ public class CustomJsonSerializer : IJsonSerializer
         }
         catch (Exception ex)
         {
-            return LogAndReturnFailure<string>($"JSON Serialization failed: {ex.Message}");
+            return LogAndReturnFailure<string>(ZString.Format("JSON Serialization failed: {0}", ex.Message));
         }
     }
 
@@ -74,7 +74,7 @@ public class CustomJsonSerializer : IJsonSerializer
         }
         catch (Exception ex)
         {
-            return LogAndReturnFailure<T>($"JSON Deserialization failed: {ex.Message}");
+            return LogAndReturnFailure<T>(ZString.Format("JSON Deserialization failed: {0}", ex.Message));
         }
 
         return LogAndReturnFailure<T>("DeserializeAsync: Deserialization failed.");
@@ -134,7 +134,7 @@ public class CustomJsonSerializer : IJsonSerializer
     private Result<T>? LogAndReturnFailure<T>(string? message) where T : notnull
     {
         message ??= "Unknown error";
-        _logger.ZLogError($"{message}");
+        _logger.LogError(message);
         return Result<T>.Failure(message);
     }
 }

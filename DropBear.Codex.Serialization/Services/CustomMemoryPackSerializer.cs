@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using DropBear.Codex.AppLogger.Interfaces;
 using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
@@ -14,7 +15,7 @@ namespace DropBear.Codex.Serialization.Services;
 public class CustomMemoryPackSerializer : IMemoryPackSerializer
 {
     private readonly ICompressionHelper _compressionHelper;
-    private readonly ILogger<CustomMemoryPackSerializer> _logger;
+    private readonly IAppLogger<CustomMemoryPackSerializer> _logger;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="CustomMemoryPackSerializer" /> class.
@@ -22,7 +23,7 @@ public class CustomMemoryPackSerializer : IMemoryPackSerializer
     /// <param name="logger">Logger for capturing runtime information and errors.</param>
     /// <param name="compressionHelper">Helper for managing data compression and decompression.</param>
     /// <exception cref="ArgumentNullException">Thrown if logger or compressionHelper is null.</exception>
-    public CustomMemoryPackSerializer(ILogger<CustomMemoryPackSerializer> logger, ICompressionHelper compressionHelper)
+    public CustomMemoryPackSerializer(IAppLogger<CustomMemoryPackSerializer> logger, ICompressionHelper compressionHelper)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
         _compressionHelper = compressionHelper ??
@@ -53,7 +54,7 @@ public class CustomMemoryPackSerializer : IMemoryPackSerializer
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"MemoryPack Serialization failed.");
+            _logger.LogError(ex, "MemoryPack Serialization failed.");
             return Result<byte[]>.Failure("MemoryPack Serialization failed: " + ex.Message);
         }
 
@@ -82,7 +83,7 @@ public class CustomMemoryPackSerializer : IMemoryPackSerializer
         }
         catch (Exception ex)
         {
-            _logger.ZLogError(ex, $"MemoryPack Deserialization failed.");
+            _logger.LogError(ex, "MemoryPack Deserialization failed.");
             return Result<T>.Failure("MemoryPack Deserialization failed: " + ex.Message);
         }
 

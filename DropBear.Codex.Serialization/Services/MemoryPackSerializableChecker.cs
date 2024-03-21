@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using Cysharp.Text;
 using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Interfaces;
 using MemoryPack;
@@ -31,18 +32,18 @@ public class MemoryPackSerializableChecker : ISerializableChecker
         {
             // Check if type is public
             if (!type.IsPublic)
-                return CacheAndReturn(type, Result<bool>.Failure($"Type '{type.Name}' must be public."));
+                return CacheAndReturn(type, Result<bool>.Failure("Type is not public."));
 
             // Check for MemoryPackable attribute
             var attribute = type.GetCustomAttribute<MemoryPackableAttribute>();
             return CacheAndReturn(type, attribute is null
-                ? Result<bool>.Failure($"Type '{type.Name}' lacks MemoryPackableAttribute.")
-                : Result<bool>.Success(true));
+                ? Result<bool>.Failure(ZString.Format("Type '{0}' lacks MemoryPackableAttribute.", type.Name))
+                : Result<bool>.Success(value: true));
         }
         catch (Exception ex)
         {
             // Log or handle the exception gracefully
-            return CacheAndReturn(type, Result<bool>.Failure($"Error checking type '{type.Name}': {ex.Message}"));
+            return CacheAndReturn(type, Result<bool>.Failure(ZString.Format("MemoryPackable check failed: {0}", ex.Message)));
         }
     }
 

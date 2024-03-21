@@ -1,4 +1,5 @@
-﻿using DropBear.Codex.Serialization.Helpers;
+﻿using DropBear.Codex.AppLogger.Extensions;
+using DropBear.Codex.Serialization.Helpers;
 using DropBear.Codex.Serialization.Interfaces;
 using DropBear.Codex.Serialization.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,6 +47,8 @@ public static class ServiceCollectionExtensions
         // Register the checker implementations
         services.AddSingleton<MessagePackCompatibilityChecker>();
         services.AddSingleton<MemoryPackSerializableChecker>();
+
+        services.AddAppLogger();
 
         return services;
     }

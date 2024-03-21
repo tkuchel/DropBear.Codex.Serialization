@@ -1,4 +1,6 @@
-﻿using DropBear.Codex.Core.ReturnTypes;
+﻿using Cysharp.Text;
+using DropBear.Codex.AppLogger.Interfaces;
+using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
@@ -12,14 +14,14 @@ namespace DropBear.Codex.Serialization.Services;
 /// </summary>
 public class CustomMessagePackSerializer : IMessagePackSerializer
 {
-    private readonly ILogger<CustomMessagePackSerializer> _logger;
+    private readonly IAppLogger<CustomMessagePackSerializer> _logger;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="CustomMessagePackSerializer" /> class.
     /// </summary>
     /// <param name="logger">The logger to use for logging errors or information.</param>
     /// <exception cref="ArgumentNullException">Thrown if the logger is null.</exception>
-    public CustomMessagePackSerializer(ILogger<CustomMessagePackSerializer> logger) =>
+    public CustomMessagePackSerializer(IAppLogger<CustomMessagePackSerializer> logger) =>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
 
     /// <summary>
@@ -30,10 +32,10 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
     /// <param name="compressionOption">Specifies whether to apply LZ4 compression.</param>
     /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous serialization operation, containing the result as a byte array.</returns>
-    public async Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption,
+    public async Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption,
         CancellationToken cancellationToken = default) where T : notnull
     {
-        if (data == null) return LogAndReturnFailure<byte[]>("SerializeAsync: Input data is null.");
+        if (data is null) return LogAndReturnFailure<byte[]>("SerializeAsync: Input data is null.");
 
         try
         {
@@ -45,7 +47,7 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
         }
         catch (Exception ex)
         {
-            return LogAndReturnFailure<byte[]>($"MessagePack Serialization failed: {ex.Message}");
+            return LogAndReturnFailure<byte[]>(ZString.Format("MessagePack Serialization failed: {0}", ex.Message));
         }
     }
 
@@ -74,7 +76,7 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
         }
         catch (Exception ex)
         {
-            return LogAndReturnFailure<T>($"MessagePack Deserialization failed: {ex.Message}");
+            return LogAndReturnFailure<T>(ZString.Format("MessagePack Deserialization failed: {0}", ex.Message));
         }
     }
 
@@ -86,7 +88,7 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
     /// <returns>A failure result containing the error message.</returns>
     private Result<T> LogAndReturnFailure<T>(string message) where T : notnull
     {
-        _logger.ZLogError($"{message}");
+        _logger.LogError(message);
         return Result<T>.Failure(message);
     }
 

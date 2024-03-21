@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using Cysharp.Text;
 using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
@@ -44,12 +45,12 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
 
         // Ensure the type is public and not nested.
         if (!type.IsPublic || type.IsNested)
-            throw new InvalidOperationException($"Type {type.Name} must be public and not nested.");
+            throw new InvalidOperationException(ZString.Format("Type {0} must be public and not nested.", type.Name));
 
         // Ensure the type has a MessagePackObject attribute.
         var messagePackObjectAttribute = type.GetCustomAttribute<MessagePackObjectAttribute>();
         if (messagePackObjectAttribute is null)
-            throw new InvalidOperationException($"Type {type.Name} must have a MessagePackObject attribute.");
+            throw new InvalidOperationException(ZString.Format("Type {0} must have a MessagePackObject attribute.", type.Name));
 
         // Collect all properties and fields that should be serialized.
         var members = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -65,8 +66,10 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
 
         // If any members are missing a Key attribute and are not ignored, report them in an exception.
         if (membersWithoutKey.Count is not 0)
-            throw new InvalidOperationException(
-                $"The following members in type {type.Name} must have a Key attribute for MessagePack serialization or be marked with IgnoreMember: {string.Join(", ", membersWithoutKey)}.");
+            throw new InvalidOperationException(ZString.Format(
+                "Type {0} has members without a Key attribute: {1}",
+                type.Name,
+                string.Join(", ", membersWithoutKey)));
 
         // Cache the result as the type is compatible.
         _compatibilityCache[type] = true;
