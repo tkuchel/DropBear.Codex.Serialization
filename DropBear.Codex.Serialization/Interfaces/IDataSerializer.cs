@@ -44,11 +44,11 @@ public interface IDataSerializer
     ///     Determines if a type is serializable by MessagePack by inspecting its attributes.
     ///     Results are cached to improve performance on subsequent checks.
     /// </summary>
-    Task<Result<bool>> IsMessagePackSerializable<T>() where T : class;
+    Task<Result> IsMessagePackSerializable<T>() where T : class;
 
     /// <summary>
     ///     Determines if a type is serializable by MemoryPack by inspecting its attributes.
     ///     Results are cached to improve performance on subsequent checks.
     /// </summary>
-    Task<Result<bool>> IsMemoryPackSerializable<T>() where T : class;
+    Task<Result> IsMemoryPackSerializable<T>() where T : class;
 }

@@ -12,15 +12,15 @@ namespace DropBear.Codex.Serialization.Services;
 /// </summary>
 public class MemoryPackSerializableChecker : ISerializableChecker
 {
-    private static readonly ConcurrentDictionary<Type, Result<bool>> Cache = new();
+    private static readonly ConcurrentDictionary<Type, Result> Cache = new();
 
 
     /// <summary>
     ///     Checks if the specified type is serializable with MemoryPack.
     /// </summary>
     /// <typeparam name="T">The type to check.</typeparam>
-    /// <returns>A <see cref="Result{Boolean}" /> indicating if the type is serializable.</returns>
-    public Result<bool> IsSerializable<T>() where T : class
+    /// <returns>A <see cref="Result" /> indicating if the type is serializable.</returns>
+    public Result IsSerializable<T>() where T : class
     {
         var type = typeof(T);
 
@@ -32,22 +32,22 @@ public class MemoryPackSerializableChecker : ISerializableChecker
         {
             // Check if type is public
             if (!type.IsPublic)
-                return CacheAndReturn(type, Result<bool>.Failure("Type is not public."));
+                return CacheAndReturn(type, Result.Failure("Type is not public."));
 
             // Check for MemoryPackable attribute
             var attribute = type.GetCustomAttribute<MemoryPackableAttribute>();
             return CacheAndReturn(type, attribute is null
-                ? Result<bool>.Failure(ZString.Format("Type '{0}' lacks MemoryPackableAttribute.", type.Name))
-                : Result<bool>.Success(value: true));
+                ? Result.Failure(ZString.Format("Type '{0}' lacks MemoryPackableAttribute.", type.Name))
+                : Result.Success());
         }
         catch (Exception ex)
         {
             // Log or handle the exception gracefully
-            return CacheAndReturn(type, Result<bool>.Failure(ZString.Format("MemoryPackable check failed: {0}", ex.Message)));
+            return CacheAndReturn(type, Result.Failure(ZString.Format("MemoryPackable check failed: {0}", ex.Message)));
         }
     }
 
-    private static Result<bool> CacheAndReturn(Type type, Result<bool> result)
+    private static Result CacheAndReturn(Type type, Result result)
     {
         Cache[type] = result;
         return result;

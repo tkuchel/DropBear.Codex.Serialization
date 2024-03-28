@@ -13,18 +13,18 @@ namespace DropBear.Codex.Serialization.Services;
 public class MessagePackCompatibilityChecker : ISerializableChecker
 {
     // Cache to store compatibility check results to improve performance.
-    private readonly ConcurrentDictionary<Type, bool> _compatibilityCache = new();
+    private readonly ConcurrentDictionary<Type, Result> _compatibilityCache = new();
 
-    public Result<bool> IsSerializable<T>() where T : class
+    public Result IsSerializable<T>() where T : class
     {
         try
         {
             EnsureMessagePackCompatibility<T>();
-            return true;
+            return Result.Success();
         }
         catch (Exception)
         {
-            return false;
+            return Result.Failure("Type is not compatible with MessagePack serialization.");
         }
     }
 
@@ -40,8 +40,8 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
         var type = typeof(T);
 
         // Check cache first to avoid repeated reflection.
-        if (_compatibilityCache.TryGetValue(type, out var isCompatible) &&
-            isCompatible) return; // Type is already verified as compatible, no need to check again.
+        if (_compatibilityCache.TryGetValue(type, out var result) &&
+            result.IsSuccess) return; // Type is already verified as compatible, no need to check again.
 
         // Ensure the type is public and not nested.
         if (!type.IsPublic || type.IsNested)
@@ -72,6 +72,6 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
                 string.Join(", ", membersWithoutKey)));
 
         // Cache the result as the type is compatible.
-        _compatibilityCache[type] = true;
+        _compatibilityCache[type] = Result.Success();
     }
 }
