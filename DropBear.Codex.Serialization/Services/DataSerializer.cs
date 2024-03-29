@@ -75,10 +75,10 @@ public class DataSerializer : IDataSerializer
         _memoryPackSerializer.DeserializeAsync<T>(data, compressionOption);
 
     /// <inheritdoc />
-    public Task<Result<bool>> IsMessagePackSerializable<T>() where T : class =>
+    public Task<Result> IsMessagePackSerializable<T>() where T : class =>
         Task.FromResult(_messagePackChecker.IsSerializable<T>());
 
     /// <inheritdoc />
-    public Task<Result<bool>> IsMemoryPackSerializable<T>() where T : class =>
+    public Task<Result> IsMemoryPackSerializable<T>() where T : class =>
         Task.FromResult(_memoryPackChecker.IsSerializable<T>());
 }

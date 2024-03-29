@@ -7,5 +7,5 @@ namespace DropBear.Codex.Serialization.Interfaces;
 /// </summary>
 public interface ISerializableChecker
 {
-    Result<bool> IsSerializable<T>() where T : class;
+    Result IsSerializable<T>() where T : class;
 }
