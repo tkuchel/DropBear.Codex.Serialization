@@ -33,24 +33,16 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
             var type = typeof(T);
             if (_compatibilityCache.TryGetValue(type, out var isCompatible) && isCompatible) return true;
 
-            if (!type.IsPublic || type.IsNested)
-                throw new InvalidOperationException($"Type {type.Name} must be public and not nested.");
-
-            var messagePackObjectAttribute = type.GetCustomAttribute<MessagePackObjectAttribute>();
-            if (messagePackObjectAttribute is null)
-                throw new InvalidOperationException($"Type {type.Name} must have a MessagePackObject attribute.");
-
+            // Pre-existing checks...
+            CheckTypeIsPublicAndNotNested(type);
+            CheckForMessagePackObjectAttribute(type);
             EnsureHasSerializationConstructor(type);
-
-            var members = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Cast<MemberInfo>()
-                .Concat(type.GetFields(BindingFlags.Public | BindingFlags.Instance)).ToList();
-
+            var members = GetAllSerializableMembers(type);
             EnsureMembersHaveKeyOrIgnore(members, type);
-
-            // Additional check for string properties that might need the StringInterningFormatter
-            // This part is highly specific and may need adjustment based on the application's needs.
             EnsureStringPropertiesFormattedCorrectly(type);
+
+            // New check for Union attributes
+            EnsureValidUnionAttributes(type);
 
             _compatibilityCache[type] = true;
             return true;
@@ -89,7 +81,8 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
     {
         // Assuming string properties that require interning end with "Interned"
         var stringProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(pi => pi.PropertyType == typeof(string) && pi.Name.EndsWith("Interned", StringComparison.OrdinalIgnoreCase));
+            .Where(pi =>
+                pi.PropertyType == typeof(string) && pi.Name.EndsWith("Interned", StringComparison.OrdinalIgnoreCase));
 
         foreach (var prop in stringProperties)
         {
@@ -99,4 +92,45 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
                     $"Property {prop.Name} in type {type.Name} is expected to use StringInterningFormatter for MessagePack serialization.");
         }
     }
+
+    private static void EnsureValidUnionAttributes(Type type)
+    {
+        if (type is { IsInterface: false, IsAbstract: false }) return;
+        var unionAttributes = type.GetCustomAttributes<UnionAttribute>().ToList();
+        if (unionAttributes.Count is 0)
+            throw new InvalidOperationException(
+                $"Interface or abstract class {type.Name} must have at least one Union attribute.");
+
+        var distinctKeys = unionAttributes.Select(attr => attr.Key).Distinct().Count();
+        if (distinctKeys != unionAttributes.Count)
+            throw new InvalidOperationException($"Union keys for {type.Name} must be unique.");
+
+        foreach (var unionType in unionAttributes.Select(attr => attr.SubType))
+        {
+            if (!unionType.IsSubclassOf(type) && !type.IsAssignableFrom(unionType))
+                throw new InvalidOperationException($"Union type {unionType.Name} must inherit from {type.Name}.");
+            if (unionType.GetCustomAttribute<MessagePackObjectAttribute>() is null)
+                throw new InvalidOperationException(
+                    $"Union type {unionType.Name} must be annotated with MessagePackObject.");
+        }
+    }
+
+    private static void CheckTypeIsPublicAndNotNested(Type type)
+    {
+        if (!type.IsPublic || type.IsNested)
+            throw new InvalidOperationException($"Type {type.Name} must be public and not nested.");
+    }
+
+    private static void CheckForMessagePackObjectAttribute(MemberInfo type)
+    {
+        var messagePackObjectAttribute = type.GetCustomAttribute<MessagePackObjectAttribute>();
+        if (messagePackObjectAttribute is null)
+            throw new InvalidOperationException($"Type {type.Name} must have a MessagePackObject attribute.");
+    }
+
+    private static List<MemberInfo> GetAllSerializableMembers(Type type) =>
+        type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Cast<MemberInfo>()
+            .Concat(type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            .ToList();
 }
