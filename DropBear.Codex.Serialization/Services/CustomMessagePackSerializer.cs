@@ -104,11 +104,11 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
         compressionOption switch
         {
             CompressionOption.None => MessagePackSerializerOptions.Standard.WithResolver(serializePrivateMembers
-                ? ContractlessStandardResolverAllowPrivate.Instance
-                : ContractlessStandardResolver.Instance),
+                ? StandardResolverAllowPrivate.Instance
+                : StandardResolver.Instance),
             CompressionOption.Compressed => MessagePackSerializerOptions.Standard.WithResolver(serializePrivateMembers
-                ? ContractlessStandardResolverAllowPrivate.Instance
-                : ContractlessStandardResolver.Instance).WithCompression(MessagePackCompression
+                ? StandardResolverAllowPrivate.Instance
+                : StandardResolver.Instance).WithCompression(MessagePackCompression
                 .Lz4BlockArray),
             _ => throw new ArgumentOutOfRangeException(nameof(compressionOption), "Invalid compression option.")
         };
