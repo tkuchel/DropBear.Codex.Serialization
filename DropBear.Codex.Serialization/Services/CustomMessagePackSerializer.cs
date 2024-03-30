@@ -4,8 +4,7 @@ using DropBear.Codex.Core.ReturnTypes;
 using DropBear.Codex.Serialization.Enums;
 using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
-using Microsoft.Extensions.Logging;
-using ZLogger;
+using MessagePack.Resolvers;
 
 namespace DropBear.Codex.Serialization.Services;
 
@@ -25,33 +24,6 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
 
     /// <summary>
-    ///     Serializes the given data to a byte array using MessagePack with optional LZ4 compression.
-    /// </summary>
-    /// <typeparam name="T">The type of the data to serialize.</typeparam>
-    /// <param name="data">The data to serialize. Must not be null.</param>
-    /// <param name="compressionOption">Specifies whether to apply LZ4 compression.</param>
-    /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
-    /// <returns>A task that represents the asynchronous serialization operation, containing the result as a byte array.</returns>
-    public async Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption,
-        CancellationToken cancellationToken = default) where T : notnull
-    {
-        if (data is null) return LogAndReturnFailure<byte[]>("SerializeAsync: Input data is null.");
-
-        try
-        {
-            var options = GetSerializerOptions(compressionOption);
-            using var memoryStream = new MemoryStream();
-            await MessagePackSerializer.SerializeAsync(memoryStream, data, options, cancellationToken)
-                .ConfigureAwait(false);
-            return Result<byte[]>.Success(memoryStream.ToArray());
-        }
-        catch (Exception ex)
-        {
-            return LogAndReturnFailure<byte[]>(ZString.Format("MessagePack Serialization failed: {0}", ex.Message));
-        }
-    }
-
-    /// <summary>
     ///     Deserializes the given byte array back into an instance of type T using MessagePack, with optional LZ4
     ///     decompression.
     /// </summary>
@@ -60,7 +32,7 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
     /// <param name="compressionOption">Specifies whether the data was compressed with LZ4 and should be decompressed.</param>
     /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous deserialization operation, containing the deserialized data.</returns>
-    public async Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption,
+    public async Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption, bool privateMembersSerialized = false,
         CancellationToken cancellationToken = default) where T : notnull
     {
         if (data is null || data.Length is 0)
@@ -68,7 +40,7 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
 
         try
         {
-            var options = GetSerializerOptions(compressionOption);
+            var options = GetSerializerOptions(compressionOption, privateMembersSerialized);
             using var memoryStream = new MemoryStream(data);
             var result = await MessagePackSerializer.DeserializeAsync<T>(memoryStream, options, cancellationToken)
                 .ConfigureAwait(false);
@@ -77,6 +49,35 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
         catch (Exception ex)
         {
             return LogAndReturnFailure<T>(ZString.Format("MessagePack Deserialization failed: {0}", ex.Message));
+        }
+    }
+
+    /// <summary>
+    ///     Serializes the given data to a byte array using MessagePack with optional LZ4 compression.
+    /// </summary>
+    /// <typeparam name="T">The type of the data to serialize.</typeparam>
+    /// <param name="data">The data to serialize. Must not be null.</param>
+    /// <param name="compressionOption">Specifies whether to apply LZ4 compression.</param>
+    /// <param name="serializePrivateMembers">Specifies whether to serialize private members</param>
+    /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous serialization operation, containing the result as a byte array.</returns>
+    public async Task<Result<byte[]>> SerializeAsync<T>(T? data, CompressionOption compressionOption,
+        bool serializePrivateMembers = false,
+        CancellationToken cancellationToken = default) where T : notnull
+    {
+        if (data is null) return LogAndReturnFailure<byte[]>("SerializeAsync: Input data is null.");
+
+        try
+        {
+            var options = GetSerializerOptions(compressionOption, serializePrivateMembers);
+            using var memoryStream = new MemoryStream();
+            await MessagePackSerializer.SerializeAsync(memoryStream, data, options, cancellationToken)
+                .ConfigureAwait(false);
+            return Result<byte[]>.Success(memoryStream.ToArray());
+        }
+        catch (Exception ex)
+        {
+            return LogAndReturnFailure<byte[]>(ZString.Format("MessagePack Serialization failed: {0}", ex.Message));
         }
     }
 
@@ -96,12 +97,18 @@ public class CustomMessagePackSerializer : IMessagePackSerializer
     ///     Constructs the serializer options based on the specified compression option.
     /// </summary>
     /// <param name="compressionOption">Specifies the compression option to use.</param>
+    /// <param name="serializePrivateMembers">Specifies if private members should be serialized.</param>
     /// <returns>The serializer options configured with the appropriate compression settings.</returns>
-    private static MessagePackSerializerOptions GetSerializerOptions(CompressionOption compressionOption) =>
+    private static MessagePackSerializerOptions GetSerializerOptions(CompressionOption compressionOption,
+        bool serializePrivateMembers) =>
         compressionOption switch
         {
-            CompressionOption.None => MessagePackSerializerOptions.Standard,
-            CompressionOption.Compressed => MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression
+            CompressionOption.None => MessagePackSerializerOptions.Standard.WithResolver(serializePrivateMembers
+                ? ContractlessStandardResolverAllowPrivate.Instance
+                : ContractlessStandardResolver.Instance),
+            CompressionOption.Compressed => MessagePackSerializerOptions.Standard.WithResolver(serializePrivateMembers
+                ? ContractlessStandardResolverAllowPrivate.Instance
+                : ContractlessStandardResolver.Instance).WithCompression(MessagePackCompression
                 .Lz4BlockArray),
             _ => throw new ArgumentOutOfRangeException(nameof(compressionOption), "Invalid compression option.")
         };

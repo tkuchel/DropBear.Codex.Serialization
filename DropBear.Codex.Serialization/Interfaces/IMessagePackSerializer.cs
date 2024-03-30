@@ -11,10 +11,10 @@ public interface IMessagePackSerializer
     /// <summary>
     /// Serializes an object to MessagePack format with optional compression.
     /// </summary>
-    Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption, CancellationToken cancellationToken = default) where T : notnull;
+    Task<Result<byte[]>> SerializeAsync<T>(T data, CompressionOption compressionOption, bool serializePrivateMembers = false, CancellationToken cancellationToken = default) where T : notnull;
 
     /// <summary>
     /// Deserializes data from MessagePack format with optional decompression.
     /// </summary>
-    Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption, CancellationToken cancellationToken = default) where T : notnull;
+    Task<Result<T>> DeserializeAsync<T>(byte[]? data, CompressionOption compressionOption, bool privateMembersSerialized = false,CancellationToken cancellationToken = default) where T : notnull;
 }

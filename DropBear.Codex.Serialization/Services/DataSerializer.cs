@@ -55,14 +55,16 @@ public class DataSerializer : IDataSerializer
         _jsonSerializer.DeserializeAsync<T>(data, compressionOption, encodingOption);
 
     /// <inheritdoc />
-    public Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption)
+    public Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption,
+        bool serializePrivateMembers = false)
         where T : notnull =>
-        _messagePackSerializer.SerializeAsync(data, compressionOption);
+        _messagePackSerializer.SerializeAsync(data, compressionOption, serializePrivateMembers);
 
     /// <inheritdoc />
-    public Task<Result<T>> DeserializeMessagePackAsync<T>(byte[]? data, CompressionOption compressionOption)
+    public Task<Result<T>> DeserializeMessagePackAsync<T>(byte[]? data, CompressionOption compressionOption,
+        bool privateMembersSerialized = false)
         where T : notnull =>
-        _messagePackSerializer.DeserializeAsync<T>(data, compressionOption);
+        _messagePackSerializer.DeserializeAsync<T>(data, compressionOption, privateMembersSerialized);
 
     /// <inheritdoc />
     public Task<Result<byte[]>> SerializeMemoryPackAsync<T>(T? data, CompressionOption compressionOption)

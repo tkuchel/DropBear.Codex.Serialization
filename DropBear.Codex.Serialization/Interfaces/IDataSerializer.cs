@@ -23,12 +23,14 @@ public interface IDataSerializer
     /// <summary>
     ///     Serializes data to MessagePack format with optional compression.
     /// </summary>
-    Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption) where T : notnull;
+    Task<Result<byte[]>> SerializeMessagePackAsync<T>(T data, CompressionOption compressionOption,
+        bool serializePrivateMembers = false) where T : notnull;
 
     /// <summary>
     ///     Deserializes data from MessagePack format with optional decompression.
     /// </summary>
-    Task<Result<T>> DeserializeMessagePackAsync<T>(byte[]? data, CompressionOption compressionOption) where T : notnull;
+    Task<Result<T>> DeserializeMessagePackAsync<T>(byte[]? data, CompressionOption compressionOption,
+        bool privateMembersSerialized = false) where T : notnull;
 
     /// <summary>
     ///     Serializes data to MemoryPack format with optional compression.
