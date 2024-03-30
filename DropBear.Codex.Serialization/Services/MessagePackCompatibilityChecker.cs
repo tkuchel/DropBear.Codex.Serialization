@@ -15,9 +15,7 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
     // Cache to store compatibility check results to improve performance.
     private readonly ConcurrentDictionary<Type, bool> _compatibilityCache = new();
 
-    public Result IsSerializable<T>() where T : class => EnsureMessagePackCompatibility<T>()
-        ? Result.Success()
-        : Result.Failure("Type is not compatible with MessagePack serialization.");
+    public Result IsSerializable<T>() where T : class => EnsureMessagePackCompatibility<T>();
 
     /// <summary>
     ///     Ensures that a type is compatible with MessagePack serialization.
@@ -26,12 +24,12 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
     /// </summary>
     /// <typeparam name="T">The type to check for MessagePack compatibility.</typeparam>
     /// <exception cref="InvalidOperationException">Thrown if the type is not compatible with MessagePack serialization.</exception>
-    private bool EnsureMessagePackCompatibility<T>()
+    private Result EnsureMessagePackCompatibility<T>()
     {
         try
         {
             var type = typeof(T);
-            if (_compatibilityCache.TryGetValue(type, out var isCompatible) && isCompatible) return true;
+            if (_compatibilityCache.TryGetValue(type, out var isCompatible) && isCompatible) return Result.Success();
 
             // Determine if the type is an interface and apply only the relevant checks
             if (type.IsInterface)
@@ -50,12 +48,12 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
             }
 
             _compatibilityCache[type] = true;
-            return true;
+            return Result.Success();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _compatibilityCache[typeof(T)] = false;
-            return false;
+            return Result.Failure(ex.Message);
         }
     }
 
