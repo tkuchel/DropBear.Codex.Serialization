@@ -33,16 +33,21 @@ public class MessagePackCompatibilityChecker : ISerializableChecker
             var type = typeof(T);
             if (_compatibilityCache.TryGetValue(type, out var isCompatible) && isCompatible) return true;
 
-            // Pre-existing checks...
-            CheckTypeIsPublicAndNotNested(type);
-            CheckForMessagePackObjectAttribute(type);
-            EnsureHasSerializationConstructor(type);
-            var members = GetAllSerializableMembers(type);
-            EnsureMembersHaveKeyOrIgnore(members, type);
-            EnsureStringPropertiesFormattedCorrectly(type);
-
-            // New check for Union attributes
-            EnsureValidUnionAttributes(type);
+            // Determine if the type is an interface and apply only the relevant checks
+            if (type.IsInterface)
+            {
+                EnsureValidUnionAttributes(type); // Only run union check for interfaces
+            }
+            else
+            {
+                // For classes, perform all checks except the union check
+                CheckTypeIsPublicAndNotNested(type);
+                CheckForMessagePackObjectAttribute(type);
+                EnsureHasSerializationConstructor(type);
+                var members = GetAllSerializableMembers(type);
+                EnsureMembersHaveKeyOrIgnore(members, type);
+                EnsureStringPropertiesFormattedCorrectly(type);
+            }
 
             _compatibilityCache[type] = true;
             return true;
