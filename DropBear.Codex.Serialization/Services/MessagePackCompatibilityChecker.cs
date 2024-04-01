@@ -1,139 +1,100 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using DropBear.Codex.Core.ReturnTypes;
-using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
-using MessagePack.Formatters;
 
-namespace DropBear.Codex.Serialization.Services;
-
-/// <summary>
-///     Provides utilities for ensuring types are compatible with MessagePack serialization.
-/// </summary>
-public class MessagePackCompatibilityChecker : ISerializableChecker
+namespace DropBear.Codex.Serialization.Services
 {
-    // Cache to store compatibility check results to improve performance.
-    private readonly ConcurrentDictionary<Type, bool> _compatibilityCache = new();
-
-    public Result IsSerializable<T>() where T : class => EnsureMessagePackCompatibility<T>();
-
-    /// <summary>
-    ///     Ensures that a type is compatible with MessagePack serialization.
-    ///     This includes being public, not nested, having a MessagePackObject attribute,
-    ///     and all serializable members having a Key attribute or being marked to ignore.
-    /// </summary>
-    /// <typeparam name="T">The type to check for MessagePack compatibility.</typeparam>
-    /// <exception cref="InvalidOperationException">Thrown if the type is not compatible with MessagePack serialization.</exception>
-    private Result EnsureMessagePackCompatibility<T>()
+    public class MessagePackCompatibilityChecker
     {
-        try
-        {
-            var type = typeof(T);
-            if (_compatibilityCache.TryGetValue(type, out var isCompatible) && isCompatible) return Result.Success();
+        private readonly ConcurrentDictionary<Type, bool> _compatibilityCache = new();
 
-            // Determine if the type is an interface and apply only the relevant checks
-            if (type.IsInterface)
+        /// <summary>
+        /// Checks if the given type is compatible with MessagePack serialization.
+        /// </summary>
+        /// <param name="type">The type to check for MessagePack compatibility.</param>
+        /// <returns>True if the type is compatible with MessagePack serialization, otherwise false.</returns>
+        public bool IsSerializable(Type type)
+        {
+            // Return cached result if available
+            if (_compatibilityCache.TryGetValue(type, out var isCompatible))
             {
-                EnsureValidUnionAttributes(type); // Only run union check for interfaces
-            }
-            else
-            {
-                // For classes, perform all checks except the union check
-                CheckTypeIsPublicAndNotNested(type);
-                CheckForMessagePackObjectAttribute(type);
-                EnsureHasSerializationConstructor(type);
-                var members = GetAllSerializableMembers(type);
-                EnsureMembersHaveKeyOrIgnore(members, type);
-                EnsureStringPropertiesFormattedCorrectly(type);
+                return isCompatible;
             }
 
-            _compatibilityCache[type] = true;
-            return Result.Success();
+            try
+            {
+                // Perform compatibility checks
+                isCompatible = PerformCompatibilityChecks(type);
+
+                // Cache the result
+                _compatibilityCache[type] = isCompatible;
+            }
+            catch
+            {
+                // Consider logging the exception or handling it as needed
+                // Cache the negative result
+                _compatibilityCache[type] = false;
+                isCompatible = false;
+            }
+
+            return isCompatible;
         }
-        catch (Exception ex)
+
+        private bool PerformCompatibilityChecks(Type type)
         {
-            _compatibilityCache[typeof(T)] = false;
-            return Result.Failure(ex.Message);
+            if (!type.IsPublic || type.IsNested)
+            {
+                return false;
+            }
+
+            if (type.GetCustomAttribute<MessagePackObjectAttribute>() is null)
+            {
+                return false;
+            }
+
+            var members = GetAllSerializableMembers(type);
+            if (members.Any(member => member.GetCustomAttribute<KeyAttribute>() is null && member.GetCustomAttribute<IgnoreMemberAttribute>() is null))
+            {
+                return false;
+            }
+
+            if (type.IsInterface || type.IsAbstract)
+            {
+                return EnsureValidUnionAttributes(type);
+            }
+
+            return true;
         }
-    }
 
-    private static void EnsureHasSerializationConstructor(Type type)
-    {
-        var hasSerializationConstructor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-            .Any(c => c.GetCustomAttribute<SerializationConstructorAttribute>() != null);
+        private static IEnumerable<MemberInfo> GetAllSerializableMembers(Type type) =>
+            type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Cast<MemberInfo>()
+                .Concat(type.GetFields(BindingFlags.Public | BindingFlags.Instance));
 
-        if (!hasSerializationConstructor)
-            throw new InvalidOperationException(
-                $"Type {type.Name} must have at least one constructor with the SerializationConstructor attribute.");
-    }
-
-    private static void EnsureMembersHaveKeyOrIgnore(IEnumerable<MemberInfo> members, MemberInfo type)
-    {
-        var membersWithoutKey = members
-            .Where(m => m.GetCustomAttribute<IgnoreMemberAttribute>() == null &&
-                        m.GetCustomAttribute<KeyAttribute>() == null)
-            .Select(m => m.Name)
-            .ToList();
-
-        if (membersWithoutKey.Count != 0)
-            throw new InvalidOperationException(
-                $"The following members in type {type.Name} must have a Key attribute for MessagePack serialization or be marked with IgnoreMember: {string.Join(", ", membersWithoutKey)}.");
-    }
-
-    private static void EnsureStringPropertiesFormattedCorrectly(Type type)
-    {
-        // Assuming string properties that require interning end with "Interned"
-        var stringProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(pi =>
-                pi.PropertyType == typeof(string) && pi.Name.EndsWith("Interned", StringComparison.OrdinalIgnoreCase));
-
-        foreach (var prop in stringProperties)
+        private static bool EnsureValidUnionAttributes(Type type)
         {
-            var formatterAttribute = prop.GetCustomAttribute<MessagePackFormatterAttribute>();
-            if (formatterAttribute?.FormatterType != typeof(StringInterningFormatter))
-                throw new InvalidOperationException(
-                    $"Property {prop.Name} in type {type.Name} is expected to use StringInterningFormatter for MessagePack serialization.");
+            var unionAttributes = type.GetCustomAttributes<UnionAttribute>().ToList();
+            if (unionAttributes.Count == 0 || unionAttributes.Select(attr => attr.Key).Distinct().Count() != unionAttributes.Count)
+            {
+                return false;
+            }
+
+            foreach (var attr in unionAttributes)
+            {
+                if (!attr.SubType.IsSubclassOf(type) && !type.IsAssignableFrom(attr.SubType))
+                {
+                    return false;
+                }
+                if (attr.SubType.GetCustomAttribute<MessagePackObjectAttribute>() is null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
-
-    private static void EnsureValidUnionAttributes(Type type)
-    {
-        if (type is { IsInterface: false, IsAbstract: false }) return;
-        var unionAttributes = type.GetCustomAttributes<UnionAttribute>().ToList();
-        if (unionAttributes.Count is 0)
-            throw new InvalidOperationException(
-                $"Interface or abstract class {type.Name} must have at least one Union attribute.");
-
-        var distinctKeys = unionAttributes.Select(attr => attr.Key).Distinct().Count();
-        if (distinctKeys != unionAttributes.Count)
-            throw new InvalidOperationException($"Union keys for {type.Name} must be unique.");
-
-        foreach (var unionType in unionAttributes.Select(attr => attr.SubType))
-        {
-            if (!unionType.IsSubclassOf(type) && !type.IsAssignableFrom(unionType))
-                throw new InvalidOperationException($"Union type {unionType.Name} must inherit from {type.Name}.");
-            if (unionType.GetCustomAttribute<MessagePackObjectAttribute>() is null)
-                throw new InvalidOperationException(
-                    $"Union type {unionType.Name} must be annotated with MessagePackObject.");
-        }
-    }
-
-    private static void CheckTypeIsPublicAndNotNested(Type type)
-    {
-        if (!type.IsPublic || type.IsNested)
-            throw new InvalidOperationException($"Type {type.Name} must be public and not nested.");
-    }
-
-    private static void CheckForMessagePackObjectAttribute(MemberInfo type)
-    {
-        var messagePackObjectAttribute = type.GetCustomAttribute<MessagePackObjectAttribute>();
-        if (messagePackObjectAttribute is null)
-            throw new InvalidOperationException($"Type {type.Name} must have a MessagePackObject attribute.");
-    }
-
-    private static List<MemberInfo> GetAllSerializableMembers(Type type) =>
-        type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Cast<MemberInfo>()
-            .Concat(type.GetFields(BindingFlags.Public | BindingFlags.Instance))
-            .ToList();
 }
