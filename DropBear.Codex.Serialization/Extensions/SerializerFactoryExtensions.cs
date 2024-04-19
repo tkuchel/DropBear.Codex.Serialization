@@ -10,6 +10,7 @@ namespace DropBear.Codex.Serialization.Extensions;
 
 public static class SerializerFactoryExtensions
 {
+    #pragma warning disable IDE0060 // Remove unused parameter
     public static void RegisterSerializer<T>(this SerializerFactory factory) where T : ISerializer =>
         SerializerFactory.RegisteredSerializers.TryAdd(typeof(T), typeof(T));
 
@@ -84,4 +85,6 @@ public static class SerializerFactoryExtensions
     public static bool ValidateConfiguration(this SerializationConfig config) =>
         // Implement validation logic, e.g., check all required settings are not null.
         config.SerializerType is not null && config.EncodingProvider is not null && (config.CompressionProvider is not null || config.EncryptionProvider is not null);
+    
+    #pragma warning restore IDE0060 // Remove unused parameter
 }
