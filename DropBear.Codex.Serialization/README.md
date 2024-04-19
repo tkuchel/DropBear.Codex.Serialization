@@ -1,39 +1,61 @@
-# Serialization Project
+# DropBear.Codex.Serialization
 
 ## Overview
-This project provides advanced serialization and deserialization capabilities, supporting formats like JSON, MessagePack, and MemoryPack. It includes performance optimizations, error handling, and supports compression and encoding options.
+DropBear.Codex.Serialization provides a robust and highly configurable serialization framework, supporting multiple serialization formats such as JSON and MessagePack. It integrates advanced features such as compression, encryption, and encoding to meet modern application needs for data handling and security.
 
 ## Features
-- **Serialization & Deserialization**: Supports JSON, MessagePack, and MemoryPack with optional compression.
-- **Customizable**: Easily extendable for additional formats or compression algorithms.
-- **Error Handling**: Robust error handling and logging for debugging and operational insights.
+- **Flexible Serialization & Deserialization**: Supports multiple formats including JSON and MessagePack.
+- **Configurable Pipeline**: Customize serialization processes with encryption, compression, and encoding through a fluent API.
+- **Encryption Support**: Integrates RSA and AES encryption to ensure data security during serialization.
+- **Compression Options**: Includes support for GZip and Deflate compression algorithms to optimize data size.
+- **Encoding Techniques**: Supports Base64 and Hexadecimal encoding to enhance data interoperability.
+- **Stream Serialization**: Facilitates serialization and deserialization directly from and to streams, improving performance for large data sets.
 
 ## Getting Started
-To use the serializers, instantiate the `DataSerializer` class with dependencies on specific serializers (`JsonSerializer`, `MessagePackSerializer`, `MemoryPackSerializer`) and a compression helper.
+
+### Setup
+To utilize the serialization capabilities, you need to configure and build the serializer using the `SerializationBuilder`. Here's how you can set it up in your application:
 
 ```csharp
-var logger = // Obtain ILogger instance
-var compressionHelper = new CompressionHelper(logger);
-var jsonSerializer = new JsonSerializer(logger, compressionHelper);
-var messagePackSerializer = new MessagePackSerializer(logger, compressionHelper);
-var memoryPackSerializer = new MemoryPackSerializer(logger, compressionHelper);
-var dataSerializer = new DataSerializer(logger, jsonSerializer, messagePackSerializer, memoryPackSerializer);
+var builder = new SerializationBuilder()
+    .WithSerializer<JsonSerializer>() // Choose the serializer
+    .WithCompression<GZipCompressionProvider>() // Specify compression
+    .WithEncryption("path/to/publicKey", "path/to/privateKey") // Configure encryption
+    .WithEncoding<Base64EncodingProvider>(); // Set encoding
 
-Alternatively use the service collection extension method to register the serializers and compression helper.
+var serializer = builder.Build();
+```
+Registration in Dependency Injection (DI)
+You can easily integrate the serialization builder into a DI container to use throughout your application:
 
-Simply add the following line to your `Startup.cs` file:
+```csharp
+services.AddSingleton<ISerializer>(_ => new SerializationBuilder()
+.WithSerializer<JsonSerializer>()
+.WithCompression<GZipCompressionProvider>()
+.WithEncryption("path/to/publicKey", "path/to/privateKey")
+.WithEncoding<Base64EncodingProvider>()
+.Build());
+```
+Usage
+Use the serializer instance created by the SerializationBuilder to serialize and deserialize data:
 
-services.AddDataSerializationServices();
-
+```csharp
+var myObject = new MyDataClass();
+var serializedData = await serializer.SerializeAsync(myObject);
+var deserializedObject = await serializer.DeserializeAsync<MyDataClass>(serializedData);
+This setup ensures that the data is serialized, compressed, encrypted, and encoded seamlessly.
 ```
 
-## Usage
-
-Use the dataSerializer instance to serialize and deserialize data to/from JSON, MessagePack, and MemoryPack formats, with or without compression.
-
 ## Contributing
+Contributions are welcome! Please fork the repository, make your changes, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
 
-Contributions are welcome! Please open an issue or pull request to suggest improvements or add new features.
-License
-
+## License
 This project is licensed under [GNU Lesser General Public License](https://www.gnu.org/licenses/lgpl-3.0.en.html).
+
+## Development Status
+
+**Note:** This library is relatively new and under active development. While it is being developed with robustness and best practices in mind, it may still be evolving.
+
+We encourage you to test thoroughly and contribute if possible before using this library in a production environment. The API and features may change as feedback is received and improvements are made. We appreciate your understanding and contributions to making this library better!
+
+Please use the following link to report any issues or to contribute: [GitHub Issues](https://github.com/tkuchel/DropBear.Codex.Serialization/issues).
