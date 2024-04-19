@@ -2,7 +2,7 @@
 
 public class SerializationException : Exception
 {
-    public SerializationException(string message, Exception innerException = null)
+    public SerializationException(string message, Exception? innerException = null)
         : base(message, innerException)
     {
     }

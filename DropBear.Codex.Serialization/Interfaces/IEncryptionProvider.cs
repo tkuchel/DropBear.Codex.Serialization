@@ -1,6 +1,14 @@
-﻿namespace DropBear.Codex.Serialization.Interfaces;
-
-public interface IEncryptionProvider
+﻿namespace DropBear.Codex.Serialization.Interfaces
 {
-    IEncryptor GetEncryptor();
+    /// <summary>
+    /// Interface for encryption providers.
+    /// </summary>
+    public interface IEncryptionProvider
+    {
+        /// <summary>
+        /// Gets an encryptor.
+        /// </summary>
+        /// <returns>An instance of an encryptor.</returns>
+        IEncryptor GetEncryptor();
+    }
 }

@@ -2,40 +2,51 @@
 using MessagePack;
 using Microsoft.IO;
 
-namespace DropBear.Codex.Serialization.Serializers;
-
-public class MessagePackSerializer : ISerializer
+namespace DropBear.Codex.Serialization.Serializers
 {
-    private readonly RecyclableMemoryStreamManager _memoryManager;
-    private readonly MessagePackSerializerOptions _options;
-
-    public MessagePackSerializer(MessagePackSerializerOptions options, RecyclableMemoryStreamManager memoryManager)
+    /// <summary>
+    /// Serializer implementation for MessagePack serialization and deserialization.
+    /// </summary>
+    public class MessagePackSerializer : ISerializer
     {
-        _options = options;
-        _memoryManager = memoryManager;
-    }
+        private readonly RecyclableMemoryStreamManager _memoryManager;
+        private readonly MessagePackSerializerOptions _options;
 
-    public async Task<byte[]> SerializeAsync<T>(T value, CancellationToken cancellationToken = default)
-    {
-        var memoryStream = new RecyclableMemoryStream(_memoryManager);
-        await using (memoryStream.ConfigureAwait(false))
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessagePackSerializer"/> class.
+        /// </summary>
+        /// <param name="options">The MessagePack serialization options.</param>
+        /// <param name="memoryManager">The memory manager for recyclable memory streams.</param>
+        public MessagePackSerializer(MessagePackSerializerOptions options, RecyclableMemoryStreamManager memoryManager)
         {
-            await MessagePack.MessagePackSerializer.SerializeAsync(memoryStream, value, _options, cancellationToken)
-                .ConfigureAwait(false);
-            return memoryStream.ToArray();
+            _options = options;
+            _memoryManager = memoryManager;
         }
-    }
 
-    public async Task<T> DeserializeAsync<T>(byte[] data, CancellationToken cancellationToken = default)
-    {
-        var memoryStream = new RecyclableMemoryStream(_memoryManager);
-        await using (memoryStream.ConfigureAwait(false))
+        /// <inheritdoc/>
+        public async Task<byte[]> SerializeAsync<T>(T value, CancellationToken cancellationToken = default)
         {
-            await memoryStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
-            memoryStream.Seek(0, SeekOrigin.Begin);
-            return await MessagePack.MessagePackSerializer
-                .DeserializeAsync<T>(memoryStream, _options, cancellationToken)
-                .ConfigureAwait(false);
+            var memoryStream = new RecyclableMemoryStream(_memoryManager);
+            await using (memoryStream.ConfigureAwait(false))
+            {
+                await MessagePack.MessagePackSerializer.SerializeAsync(memoryStream, value, _options, cancellationToken)
+                    .ConfigureAwait(false);
+                return memoryStream.ToArray();
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<T> DeserializeAsync<T>(byte[] data, CancellationToken cancellationToken = default)
+        {
+            var memoryStream = new RecyclableMemoryStream(_memoryManager);
+            await using (memoryStream.ConfigureAwait(false))
+            {
+                await memoryStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                return await MessagePack.MessagePackSerializer
+                    .DeserializeAsync<T>(memoryStream, _options, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
     }
 }
