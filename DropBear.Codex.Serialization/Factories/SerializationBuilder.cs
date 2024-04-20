@@ -30,6 +30,18 @@ public class SerializationBuilder
         _config.SerializerType = typeof(T);
         return this;
     }
+    
+    /// <summary>
+    ///     Specifies the serialization provider to use.
+    /// </summary>
+    /// <param name="provider">The serialization provider instance.</param>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithSerializer(ISerializer provider)
+    {
+        _config.SerializerType = provider.GetType();
+        return this;
+    }
+  
 
     /// <summary>
     ///     Specifies the stream serializer instance to use.
@@ -72,6 +84,17 @@ public class SerializationBuilder
     public SerializationBuilder WithEncoding<T>() where T : IEncodingProvider, new()
     {
         _config.EncodingProvider = new T();
+        return this;
+    }
+    
+    /// <summary>
+    ///     Specifies the encoding provider to use.
+    /// </summary>
+    /// <param name="provider">The type of encoding provider.</param>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithEncoding(IEncodingProvider provider)
+    {
+        _config.EncodingProvider = provider;
         return this;
     }
 
