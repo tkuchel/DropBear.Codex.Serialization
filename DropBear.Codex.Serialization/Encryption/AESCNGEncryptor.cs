@@ -42,12 +42,9 @@ public class AESCNGEncryptor : IEncryptor, IDisposable
 
         using var encryptor = _aesCng.CreateEncryptor();
         await using var resultStream = _memoryStreamManager.GetStream("AesEncryptor-Encrypt");
-        await using (var cryptoStream = new CryptoStream(resultStream, encryptor, CryptoStreamMode.Write))
-        {
-            await cryptoStream.WriteAsync(data.AsMemory(), cancellationToken).ConfigureAwait(false);
-            await cryptoStream.FlushFinalBlockAsync(cancellationToken).ConfigureAwait(false);
-        }
-
+        await using var cryptoStream = new CryptoStream(resultStream, encryptor, CryptoStreamMode.Write);
+        await cryptoStream.WriteAsync(data.AsMemory(), cancellationToken).ConfigureAwait(false);
+        await cryptoStream.FlushFinalBlockAsync(cancellationToken).ConfigureAwait(false);
         return Combine(encryptedKey, encryptedIV, resultStream.ToArray());
     }
 
@@ -78,12 +75,9 @@ public class AESCNGEncryptor : IEncryptor, IDisposable
         // Decrypt data
         using var decryptor = _aesCng.CreateDecryptor(aesKey, aesIV);
         await using var resultStream = _memoryStreamManager.GetStream("AesEncryptor-Decrypt");
-        await using (var cryptoStream = new CryptoStream(resultStream, decryptor, CryptoStreamMode.Write))
-        {
-            await cryptoStream.WriteAsync(encryptedData.AsMemory(), cancellationToken).ConfigureAwait(false);
-            await cryptoStream.FlushFinalBlockAsync(cancellationToken).ConfigureAwait(false);
-        }
-
+        await using var cryptoStream = new CryptoStream(resultStream, decryptor, CryptoStreamMode.Write);
+        await cryptoStream.WriteAsync(encryptedData.AsMemory(), cancellationToken).ConfigureAwait(false);
+        await cryptoStream.FlushFinalBlockAsync(cancellationToken).ConfigureAwait(false);
         // Read the decrypted data from the result stream
         resultStream.Position = 0; // Reset the stream position to the beginning before reading
         var decryptedData = new byte[resultStream.Length];

@@ -20,17 +20,15 @@ public class GZipCompressor : ICompressor
     public async Task<byte[]> CompressAsync(byte[] data, CancellationToken cancellationToken = default)
     {
         _ = data ?? throw new ArgumentNullException(nameof(data), "Input data cannot be null.");
-
         await using var compressedStream = _memoryStreamManager.GetStream("GZipCompressor-Compress");
-
         await using (compressedStream)
         {
-            await using var zipStream = new GZipStream(compressedStream, CompressionMode.Compress, true);
+            await using var zipStream = new GZipStream(compressedStream, CompressionMode.Compress, false); // Set leaveOpen to false
             await zipStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+            await zipStream.FlushAsync(cancellationToken); // Flush the stream to ensure all data is written
+            compressedStream.Position = 0; // Reset position to read the stream content
+            return compressedStream.ToArray();
         }
-
-        compressedStream.Position = 0; // Reset position to read the stream content
-        return compressedStream.ToArray();
     }
 
     /// <inheritdoc />
@@ -39,7 +37,8 @@ public class GZipCompressor : ICompressor
         _ = compressedData ??
             throw new ArgumentNullException(nameof(compressedData), "Compressed data cannot be null.");
 
-        await using var compressedStream = _memoryStreamManager.GetStream("GZipCompressor-Decompress-Input", compressedData);
+        await using var compressedStream =
+            _memoryStreamManager.GetStream("GZipCompressor-Decompress-Input", compressedData);
         await using var decompressedStream = _memoryStreamManager.GetStream("GZipCompressor-Decompress-Output");
 
         await using (compressedStream)
@@ -47,10 +46,9 @@ public class GZipCompressor : ICompressor
         {
             await using var zipStream = new GZipStream(compressedStream, CompressionMode.Decompress);
             await zipStream.CopyToAsync(decompressedStream, cancellationToken).ConfigureAwait(false);
+            decompressedStream.Position = 0; // Reset position to read the stream content
+            return decompressedStream.ToArray();
         }
-
-        decompressedStream.Position = 0; // Reset position to read the stream content
-        return decompressedStream.ToArray();
     }
 #pragma warning restore MA0004
 }

@@ -82,7 +82,7 @@ public class SerializationBuilder
     /// <param name="privateKeyPath">The path to the private key file.</param>
     /// <returns>The serialization builder instance.</returns>
     [SupportedOSPlatform("windows")]
-    public SerializationBuilder WithAESGCMEncryption(string publicKeyPath, string privateKeyPath)
+    public SerializationBuilder WithAesgcmEncryption(string publicKeyPath, string privateKeyPath)
     {
         _config.EncryptionProvider = new AESGCMEncryptionProvider(publicKeyPath, privateKeyPath);
         return this;
@@ -95,7 +95,7 @@ public class SerializationBuilder
     /// <param name="privateKeyPath">The path to the private key file.</param>
     /// <returns>The serialization builder instance.</returns>
     [SupportedOSPlatform("windows")]
-    public SerializationBuilder WithAESCNGEncryption(string publicKeyPath, string privateKeyPath)
+    public SerializationBuilder WithAescngEncryption(string publicKeyPath, string privateKeyPath)
     {
         _config.EncryptionProvider = new AESCNGEncryptionProvider(_config.RecyclableMemoryStreamManager,publicKeyPath, privateKeyPath);
         return this;
@@ -119,7 +119,7 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithJsonSerializerOptions(JsonSerializerOptions options)
     {
-        _config.SerializerType = typeof(JsonSerializer);
+        _config.SerializerType ??= typeof(DropBear.Codex.Serialization.Serializers.JsonSerializer);
         _config.JsonSerializerOptions = options;
         return this;
     }
@@ -131,7 +131,6 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithMessagePackSerializerOptions(MessagePackSerializerOptions options)
     {
-        _config.SerializerType = typeof(MessagePackSerializer);
         _config.MessagePackSerializerOptions = options;
         return this;
     }

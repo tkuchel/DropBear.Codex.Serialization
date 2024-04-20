@@ -1,4 +1,5 @@
-﻿using DropBear.Codex.Serialization.Interfaces;
+﻿using DropBear.Codex.Serialization.Exceptions;
+using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
 using Microsoft.IO;
 
@@ -26,12 +27,26 @@ namespace DropBear.Codex.Serialization.Serializers
         /// <inheritdoc/>
         public async Task<byte[]> SerializeAsync<T>(T value, CancellationToken cancellationToken = default)
         {
-            var memoryStream = new RecyclableMemoryStream(_memoryManager);
-            await using (memoryStream.ConfigureAwait(false))
+            try
             {
-                await MessagePack.MessagePackSerializer.SerializeAsync(memoryStream, value, _options, cancellationToken)
-                    .ConfigureAwait(false);
-                return memoryStream.ToArray();
+                var memoryStream = new RecyclableMemoryStream(_memoryManager);
+                await using (memoryStream.ConfigureAwait(false))
+                {
+                    await MessagePack.MessagePackSerializer
+                        .SerializeAsync(memoryStream, value, _options, cancellationToken)
+                        .ConfigureAwait(false);
+                    return memoryStream.ToArray();
+                }
+            }
+            catch(MessagePackSerializationException ex)
+            {
+                if(ex.InnerException is FormatterNotRegisteredException)
+                    throw new SerializationException("Error occurred while serializing data. Ensure all types are registered.", ex);
+                throw new SerializationException("Error occurred while serializing data.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new SerializationException("Error occurred while serializing data.", ex);
             }
         }
 
