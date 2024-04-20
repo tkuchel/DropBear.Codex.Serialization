@@ -119,6 +119,7 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithJsonSerializerOptions(JsonSerializerOptions options)
     {
+        _config.SerializerType = typeof(JsonSerializer);
         _config.JsonSerializerOptions = options;
         return this;
     }
@@ -130,6 +131,7 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithMessagePackSerializerOptions(MessagePackSerializerOptions options)
     {
+        _config.SerializerType = typeof(MessagePackSerializer);
         _config.MessagePackSerializerOptions = options;
         return this;
     }
