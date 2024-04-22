@@ -1,10 +1,16 @@
 ﻿using System.Runtime.Versioning;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DropBear.Codex.Serialization.Configurations;
-using DropBear.Codex.Serialization.Encryption;
 using DropBear.Codex.Serialization.Interfaces;
 using DropBear.Codex.Serialization.Providers;
+using DropBear.Codex.Serialization.Serializers;
 using MessagePack;
+using MessagePack.ImmutableCollection;
+using MessagePack.Resolvers;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+using MessagePackSerializer = MessagePack.MessagePackSerializer;
 
 namespace DropBear.Codex.Serialization.Factories;
 
@@ -30,7 +36,7 @@ public class SerializationBuilder
         _config.SerializerType = typeof(T);
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the serialization provider to use.
     /// </summary>
@@ -41,7 +47,7 @@ public class SerializationBuilder
         _config.SerializerType = provider.GetType();
         return this;
     }
-  
+
 
     /// <summary>
     ///     Specifies the stream serializer instance to use.
@@ -86,7 +92,7 @@ public class SerializationBuilder
         _config.EncodingProvider = new T();
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the encoding provider to use.
     /// </summary>
@@ -110,7 +116,7 @@ public class SerializationBuilder
         _config.EncryptionProvider = new AESGCMEncryptionProvider(publicKeyPath, privateKeyPath);
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the encryption provider to use.
     /// </summary>
@@ -120,7 +126,8 @@ public class SerializationBuilder
     [SupportedOSPlatform("windows")]
     public SerializationBuilder WithAescngEncryption(string publicKeyPath, string privateKeyPath)
     {
-        _config.EncryptionProvider = new AESCNGEncryptionProvider(_config.RecyclableMemoryStreamManager,publicKeyPath, privateKeyPath);
+        _config.EncryptionProvider =
+            new AESCNGEncryptionProvider(_config.RecyclableMemoryStreamManager, publicKeyPath, privateKeyPath);
         return this;
     }
 
@@ -142,7 +149,34 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithJsonSerializerOptions(JsonSerializerOptions options)
     {
-        _config.SerializerType ??= typeof(DropBear.Codex.Serialization.Serializers.JsonSerializer);
+        _config.SerializerType ??= typeof(Serializers.JsonSerializer);
+        _config.JsonSerializerOptions = options;
+        return this;
+    }
+    
+    /// <summary>
+    ///     Specifies the JSON serializer options to use.
+    /// </summary>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithDefaultJsonSerializerOptions()
+    {
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true, // Indent the output for better readability
+            IncludeFields = true, // Include public fields in serialization
+            PropertyNameCaseInsensitive = true, // Ignore case when matching property names
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, // Ignore null values when serializing
+            NumberHandling = JsonNumberHandling.AllowReadingFromString, // Allow reading numbers from strings
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, // Use a more relaxed JSON encoder
+            ReferenceHandler = ReferenceHandler.Preserve, // Preserve reference relationships
+            MaxDepth = 64, // Set a maximum depth to avoid StackOverflowExceptions
+            UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode, // Handle unknown types as JsonNode
+            Converters = {
+                new JsonStringEnumConverter(), // Use a converter for enums
+                // Add more custom converters here if needed
+            }
+        };
+        _config.SerializerType ??= typeof(Serializers.JsonSerializer);
         _config.JsonSerializerOptions = options;
         return this;
     }
@@ -154,6 +188,24 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithMessagePackSerializerOptions(MessagePackSerializerOptions options)
     {
+        _config.MessagePackSerializerOptions = options;
+        return this;
+    }
+    
+    /// <summary>
+    ///     Specifies default MessagePack serializer options to use.
+    /// </summary>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithDefaultMessagePackSerializerOptions()
+    {
+        var options = MessagePackSerializerOptions.Standard
+            .WithResolver(CompositeResolver.Create(
+                ImmutableCollectionResolver.Instance,
+                StandardResolverAllowPrivate.Instance,
+                StandardResolver.Instance
+            ))
+            .WithSecurity(MessagePackSecurity.UntrustedData);
+        
         _config.MessagePackSerializerOptions = options;
         return this;
     }
@@ -172,13 +224,30 @@ public class SerializationBuilder
     /// <returns>The configured serializer instance.</returns>
     public ISerializer Build()
     {
-        if (_config.SerializerType == null)
-            throw new InvalidOperationException(
-                "No serializer type specified. Please specify the serializer type before building.");
+        _config.SerializerType = _config.SerializerType switch
+        {
+            // Ensure that a serializer type or stream serializer is specified
+            null when _config.StreamSerializer is null => throw new InvalidOperationException(
+                "No serializer type or stream serializer specified. Please specify one before building."),
+            // Provide a default serializer if none is specified but a stream serializer is set
+            null when _config.StreamSerializer is not null => typeof(StreamSerializerAdapter),
+            _ => _config.SerializerType
+        };
 
+        // Validate specific serializer configurations
+        ValidateSerializerConfigurations();
+
+        // Create and return the serializer using the configured settings
+        return SerializerFactory.CreateSerializer(_config);
+    }
+
+    private void ValidateSerializerConfigurations()
+    {
         if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions is null)
             throw new InvalidOperationException("JsonSerializerOptions must be specified for JsonSerializer.");
 
-        return SerializerFactory.CreateSerializer(_config);
+        if (_config.SerializerType == typeof(MessagePackSerializer) && _config.MessagePackSerializerOptions is null)
+            throw new InvalidOperationException(
+                "MessagePackSerializerOptions must be specified for MessagePackSerializer.");
     }
 }
