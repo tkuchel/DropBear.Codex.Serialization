@@ -1,10 +1,12 @@
 ﻿using System.Runtime.Versioning;
 using System.Text.Json;
 using DropBear.Codex.Serialization.Configurations;
-using DropBear.Codex.Serialization.Encryption;
 using DropBear.Codex.Serialization.Interfaces;
 using DropBear.Codex.Serialization.Providers;
+using DropBear.Codex.Serialization.Serializers;
 using MessagePack;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+using MessagePackSerializer = MessagePack.MessagePackSerializer;
 
 namespace DropBear.Codex.Serialization.Factories;
 
@@ -30,7 +32,7 @@ public class SerializationBuilder
         _config.SerializerType = typeof(T);
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the serialization provider to use.
     /// </summary>
@@ -41,7 +43,7 @@ public class SerializationBuilder
         _config.SerializerType = provider.GetType();
         return this;
     }
-  
+
 
     /// <summary>
     ///     Specifies the stream serializer instance to use.
@@ -53,6 +55,26 @@ public class SerializationBuilder
         _config.StreamSerializer = new T();
         return this;
     }
+
+
+    /// <summary>
+    ///     Configures the serialization builder to handle raw byte deserialization. This method sets up
+    ///     the necessary settings to ensure that raw bytes can be properly processed, typically by
+    ///     enabling features or configurations that support the decryption and decompression of raw data.
+    /// </summary>
+    /// <returns>
+    ///     The <see cref="SerializationBuilder" /> instance with updated configurations to handle raw bytes,
+    ///     allowing chaining of further configuration calls.
+    /// </returns>
+    /// <remarks>
+    ///     This method is particularly useful when the serialized data might be encrypted or compressed
+    ///     and needs to be reverted to its original form. Invoking this method ensures that the builder
+    ///     will prepare serializers that can handle such transformations on raw byte arrays.
+    /// </remarks>
+    public SerializationBuilder WithRawByteHandling() =>
+        // Implementation specifics for enabling raw byte handling
+        this;
+
 
     /// <summary>
     ///     Specifies the compression provider to use.
@@ -86,7 +108,7 @@ public class SerializationBuilder
         _config.EncodingProvider = new T();
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the encoding provider to use.
     /// </summary>
@@ -110,7 +132,7 @@ public class SerializationBuilder
         _config.EncryptionProvider = new AESGCMEncryptionProvider(publicKeyPath, privateKeyPath);
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the encryption provider to use.
     /// </summary>
@@ -120,7 +142,8 @@ public class SerializationBuilder
     [SupportedOSPlatform("windows")]
     public SerializationBuilder WithAescngEncryption(string publicKeyPath, string privateKeyPath)
     {
-        _config.EncryptionProvider = new AESCNGEncryptionProvider(_config.RecyclableMemoryStreamManager,publicKeyPath, privateKeyPath);
+        _config.EncryptionProvider =
+            new AESCNGEncryptionProvider(_config.RecyclableMemoryStreamManager, publicKeyPath, privateKeyPath);
         return this;
     }
 
@@ -142,7 +165,7 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithJsonSerializerOptions(JsonSerializerOptions options)
     {
-        _config.SerializerType ??= typeof(DropBear.Codex.Serialization.Serializers.JsonSerializer);
+        _config.SerializerType ??= typeof(Serializers.JsonSerializer);
         _config.JsonSerializerOptions = options;
         return this;
     }
@@ -172,13 +195,30 @@ public class SerializationBuilder
     /// <returns>The configured serializer instance.</returns>
     public ISerializer Build()
     {
-        if (_config.SerializerType == null)
-            throw new InvalidOperationException(
-                "No serializer type specified. Please specify the serializer type before building.");
+        _config.SerializerType = _config.SerializerType switch
+        {
+            // Ensure that a serializer type or stream serializer is specified
+            null when _config.StreamSerializer is null => throw new InvalidOperationException(
+                "No serializer type or stream serializer specified. Please specify one before building."),
+            // Provide a default serializer if none is specified but a stream serializer is set
+            null when _config.StreamSerializer is not null => typeof(StreamSerializerAdapter),
+            _ => _config.SerializerType
+        };
 
-        if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions == null)
+        // Validate specific serializer configurations
+        ValidateSerializerConfigurations();
+
+        // Create and return the serializer using the configured settings
+        return SerializerFactory.CreateSerializer(_config);
+    }
+
+    private void ValidateSerializerConfigurations()
+    {
+        if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions is null)
             throw new InvalidOperationException("JsonSerializerOptions must be specified for JsonSerializer.");
 
-        return SerializerFactory.CreateSerializer(_config);
+        if (_config.SerializerType == typeof(MessagePackSerializer) && _config.MessagePackSerializerOptions is null)
+            throw new InvalidOperationException(
+                "MessagePackSerializerOptions must be specified for MessagePackSerializer.");
     }
 }

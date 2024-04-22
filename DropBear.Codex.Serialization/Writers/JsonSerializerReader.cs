@@ -25,5 +25,18 @@ namespace DropBear.Codex.Serialization.Writers
             return await JsonSerializer.DeserializeAsync<T>(stream, _options, cancellationToken)
                 .ConfigureAwait(false) ?? default;
         }
+        
+        /// <summary>
+        /// Deserializes raw byte data from a stream into a byte array directly.
+        /// </summary>
+        /// <param name="stream">The stream containing the data to deserialize.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A task that represents the asynchronous operation and returns the byte array.</returns>
+        public static async Task<byte[]> DeserializeRawBytesAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+            return memoryStream.ToArray();
+        }
     }
 }

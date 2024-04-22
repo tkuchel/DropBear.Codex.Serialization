@@ -49,7 +49,7 @@ public class CombinedSerializer : ISerializer
     /// <param name="data">The data to deserialize.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation and returns the deserialized object.</returns>
-    public async Task<T> DeserializeAsync<T>(byte[] data, CancellationToken cancellationToken = default)
+    public async Task<T?> DeserializeAsync<T>(byte[] data, CancellationToken cancellationToken = default)
     {
         // Example condition: Use stream serializer if expected type is Stream or based on data size, etc.
         if (typeof(T) != typeof(Stream) && data.Length <= LargeSizeThreshold)
@@ -57,4 +57,28 @@ public class CombinedSerializer : ISerializer
         var memoryStream = new MemoryStream(data);
         return await _streamSerializer.DeserializeAsync<T>(memoryStream, cancellationToken).ConfigureAwait(false);
     }
+    
+    /// <summary>
+    /// Deserializes raw byte data, using the most appropriate method based on data size or type.
+    /// </summary>
+    /// <param name="data">The byte array to deserialize.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the deserialization operation.</param>
+    /// <returns>The deserialized byte array, which could be directly from the raw data or processed data.</returns>
+    public async Task<byte[]> DeserializeRawBytesAsync(byte[] data, CancellationToken cancellationToken = default)
+    {
+        // Choose the deserialization method based on the size or type of data
+        if (data.Length <= LargeSizeThreshold)
+        {
+            // If data is not large, use the default serializer's methods directly
+            return await _defaultSerializer.DeserializeRawBytesAsync(data, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            // For large data, use the stream serializer
+            using var memoryStream = new MemoryStream(data);
+            // Assuming StreamSerializer can return the original stream as byte array
+            return await _streamSerializer.DeserializeRawBytesAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
 }
