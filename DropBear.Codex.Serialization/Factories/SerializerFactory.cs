@@ -80,28 +80,49 @@ public abstract class SerializerFactory
         return new EncodedSerializer(serializer, encodingProvider);
     }
 
-    private static ISerializer CreateBuiltInSerializer(SerializationConfig config)
+        private static ISerializer CreateBuiltInSerializer(SerializationConfig config)
     {
-        if(config.RecyclableMemoryStreamManager is null)
-            throw new ArgumentException("RecyclableMemoryStreamManager must be specified.", nameof(config));
-        
+        // First, check if a StreamSerializer is specified in the config
+        if (config.StreamSerializer is not null)
+        {
+            // Assume StreamSerializer is correctly set to an instance of IStreamSerializer
+            return new StreamSerializerAdapter(config.StreamSerializer);
+        }
+
+        // Proceed with creating a serializer based on the SerializerType
         switch (config.SerializerType)
         {
             case { } t when t == typeof(JsonSerializer):
-                if (config.JsonSerializerOptions is null)
-                    throw new ArgumentException("JsonSerializerOptions must be specified for JsonSerializer.",
-                        nameof(config));
-                return new JsonSerializer(config.JsonSerializerOptions, config.RecyclableMemoryStreamManager);
+                if (config.JsonSerializerOptions is not null)
+                {
+                    var jsonStreamSerializer = new JsonStreamSerializer(config.JsonSerializerOptions);
+                    return new StreamSerializerAdapter(jsonStreamSerializer);
+                }
+
+                break;
 
             case { } t when t == typeof(MessagePackSerializer):
-                if (config.MessagePackSerializerOptions is null)
-                    throw new ArgumentException(
-                        "MessagePackSerializerOptions must be specified for MessagePackSerializer.", nameof(config));
-                return new MessagePackSerializer(config.MessagePackSerializerOptions,
-                    config.RecyclableMemoryStreamManager);
+                if (config.MessagePackSerializerOptions is not null)
+                    return new MessagePackSerializer(config.MessagePackSerializerOptions,
+                        config.RecyclableMemoryStreamManager);
+                break;
+
+            case { } t when t == typeof(CombinedSerializer):
+                if (config.JsonSerializerOptions is not null)
+                {
+                    var defaultSerializer = new Serializers.JsonSerializer(config.JsonSerializerOptions,
+                        config.RecyclableMemoryStreamManager);
+                    var streamSerializer = new JsonStreamSerializer(config.JsonSerializerOptions);
+                    return new CombinedSerializer(defaultSerializer, streamSerializer);
+                }
+
+                break;
 
             default:
                 throw new ArgumentException("Invalid serializer type specified.", nameof(config));
         }
+
+        throw new ArgumentException("Serializer options must be specified for the selected serializer type.",
+            nameof(config));
     }
 }

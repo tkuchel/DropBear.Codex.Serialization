@@ -176,7 +176,7 @@ public class SerializationBuilder
             throw new InvalidOperationException(
                 "No serializer type specified. Please specify the serializer type before building.");
 
-        if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions == null)
+        if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions is null)
             throw new InvalidOperationException("JsonSerializerOptions must be specified for JsonSerializer.");
 
         return SerializerFactory.CreateSerializer(_config);
