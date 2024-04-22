@@ -57,19 +57,21 @@ public class JsonSerializer : ISerializer
     /// <param name="data">The raw byte data to deserialize.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>The deserialized object from the provided raw byte data.</returns>
-    public async Task<byte[]> DeserializeRawBytesAsync(byte[] data, CancellationToken cancellationToken = default)
+    public Task<byte[]> DeserializeRawBytesAsync(byte[] data, CancellationToken cancellationToken = default)
     {
-        var memoryStream = new RecyclableMemoryStream(_memoryManager);
-        await using (memoryStream.ConfigureAwait(false))
-        {
-            await memoryStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
-            memoryStream.Seek(0, SeekOrigin.Begin);
+        return Task.FromResult(data);
 
-            // Assume the data is a simple JSON string that represents a byte array, and deserialize it directly.
-            // Adjust the logic here if the JSON data structure is different.
-            return await System.Text.Json.JsonSerializer
-                       .DeserializeAsync<byte[]>(memoryStream, _options, cancellationToken).ConfigureAwait(false)
-                   ?? throw new InvalidOperationException("Failed to deserialize raw bytes.");
-        }
+        // var memoryStream = new RecyclableMemoryStream(_memoryManager);
+        // await using (memoryStream.ConfigureAwait(false))
+        // {
+        //     await memoryStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+        //     memoryStream.Seek(0, SeekOrigin.Begin);
+        //
+        //     // Assume the data is a simple JSON string that represents a byte array, and deserialize it directly.
+        //     // Adjust the logic here if the JSON data structure is different.
+        //     return await System.Text.Json.JsonSerializer
+        //                .DeserializeAsync<byte[]>(memoryStream, _options, cancellationToken).ConfigureAwait(false)
+        //            ?? throw new InvalidOperationException("Failed to deserialize raw bytes.");
+        // }
     }
 }

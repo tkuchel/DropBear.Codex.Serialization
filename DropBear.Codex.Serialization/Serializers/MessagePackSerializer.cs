@@ -72,15 +72,16 @@ public class MessagePackSerializer : ISerializer
     /// <param name="data">The raw byte data to deserialize.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the deserialization operation.</param>
     /// <returns>The deserialized byte array from the provided MessagePack data.</returns>
-    public async Task<byte[]> DeserializeRawBytesAsync(byte[] data, CancellationToken cancellationToken = default)
+    public Task<byte[]> DeserializeRawBytesAsync(byte[] data, CancellationToken cancellationToken = default)
     {
-        var memoryStream = new RecyclableMemoryStream(_memoryManager);
-        await using (memoryStream.ConfigureAwait(false))
-        {
-            await memoryStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
-            memoryStream.Seek(0, SeekOrigin.Begin);
-            return await MessagePack.MessagePackSerializer
-                .DeserializeAsync<byte[]>(memoryStream, _options, cancellationToken).ConfigureAwait(false);
-        }
+        return Task.FromResult(data);
+        // var memoryStream = new RecyclableMemoryStream(_memoryManager);
+        // await using (memoryStream.ConfigureAwait(false))
+        // {
+        //     await memoryStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+        //     memoryStream.Seek(0, SeekOrigin.Begin);
+        //     return await MessagePack.MessagePackSerializer
+        //         .DeserializeAsync<byte[]>(memoryStream, _options, cancellationToken).ConfigureAwait(false);
+        // }
     }
 }
