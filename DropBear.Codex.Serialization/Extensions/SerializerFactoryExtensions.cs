@@ -11,17 +11,6 @@ namespace DropBear.Codex.Serialization.Extensions;
 [SupportedOSPlatform("windows")]
 public static class SerializerFactoryExtensions
 {
-    public static void RegisterSerializer<T>() where T : ISerializer =>
-        SerializerFactory.RegisteredSerializers.TryAdd(typeof(T), typeof(T));
-
-    public static void RegisterSerializer<TSerializer, TImplementation>()
-        where TSerializer : ISerializer
-        where TImplementation : class, TSerializer =>
-        SerializerFactory.RegisteredSerializers.TryAdd(typeof(TSerializer), typeof(TImplementation));
-
-    public static void UnregisterSerializer<T>() where T : ISerializer =>
-        SerializerFactory.RegisteredSerializers.TryRemove(typeof(T), out _);
-
     public static SerializationBuilder WithDefaultJsonOptions(this SerializationBuilder builder,
         bool writeIndented = false)
     {

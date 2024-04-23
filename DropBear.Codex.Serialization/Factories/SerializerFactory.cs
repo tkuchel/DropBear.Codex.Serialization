@@ -10,7 +10,6 @@ namespace DropBear.Codex.Serialization.Factories;
 public abstract class SerializerFactory
 {
 #pragma warning disable MA0015
-    internal static readonly ConcurrentDictionary<Type, Type> RegisteredSerializers = new();
     private static SerializationConfig? s_config;
 
     public static ISerializer CreateSerializer(SerializationConfig? config)
@@ -38,7 +37,7 @@ public abstract class SerializerFactory
         var serializerType =
             s_config?.SerializerType ?? throw new InvalidOperationException("Serializer type not set.");
 
-        return InstantiateSerializer(RegisteredSerializers.GetValueOrDefault(serializerType, serializerType));
+        return InstantiateSerializer(serializerType);
     }
 
     private static ISerializer InstantiateSerializer(Type serializerType)
