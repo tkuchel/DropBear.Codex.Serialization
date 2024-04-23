@@ -12,7 +12,6 @@ namespace DropBear.Codex.Serialization.Extensions;
 [SupportedOSPlatform("windows")]
 public static class SerializerFactoryExtensions
 {
-#pragma warning disable IDE0060 // Remove unused parameter
     public static void RegisterSerializer<T>(this SerializerFactory factory) where T : ISerializer =>
         SerializerFactory.RegisteredSerializers.TryAdd(typeof(T), typeof(T));
 
@@ -23,7 +22,6 @@ public static class SerializerFactoryExtensions
 
     public static void UnregisterSerializer<T>(this SerializerFactory factory) where T : ISerializer =>
         SerializerFactory.RegisteredSerializers.TryRemove(typeof(T), out _);
-
 
     public static SerializationBuilder WithDefaultJsonOptions(this SerializationBuilder builder,
         bool writeIndented = false)
@@ -54,12 +52,8 @@ public static class SerializerFactoryExtensions
             throw new ArgumentException("Selected type does not implement ICompressionProvider",
                 nameof(providerTypeSelector));
 
-        if (Activator.CreateInstance(providerType) is not ICompressionProvider providerInstance)
-            throw new InvalidOperationException("Failed to create an instance of the compression provider.");
-
-        return builder.WithCompression(providerInstance);
+        return builder.WithCompression(providerType);
     }
-
 
     public static SerializationBuilder WithAdaptiveEncryption(this SerializationBuilder builder,
         Func<Type> providerTypeSelector)
@@ -69,27 +63,10 @@ public static class SerializerFactoryExtensions
             throw new ArgumentException("Selected type does not implement IEncryptionProvider",
                 nameof(providerTypeSelector));
 
-        IEncryptionProvider? providerInstance;
-        try
-        {
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            providerInstance = (IEncryptionProvider)Activator.CreateInstance(providerType);
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Failed to create an instance of the encryption provider.", ex);
-        }
-
-        if (providerInstance is not null) return builder.WithEncryption(providerInstance);
-        throw new InvalidOperationException("Failed to create an instance of the encryption provider.");
+        return builder.WithEncryption(providerType);
     }
 
-
     public static bool ValidateConfiguration(this SerializationConfig config) =>
-        // Implement validation logic, e.g., check all required settings are not null.
         config.SerializerType is not null && config.EncodingProviderType is not null &&
         (config.CompressionProviderType is not null || config.EncryptionProviderType is not null);
-
-#pragma warning restore IDE0060 // Remove unused parameter
 }

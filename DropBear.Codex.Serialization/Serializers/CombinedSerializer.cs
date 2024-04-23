@@ -1,4 +1,5 @@
-﻿using DropBear.Codex.Serialization.Interfaces;
+﻿using DropBear.Codex.Serialization.Configurations;
+using DropBear.Codex.Serialization.Interfaces;
 
 namespace DropBear.Codex.Serialization.Serializers;
 
@@ -9,18 +10,27 @@ namespace DropBear.Codex.Serialization.Serializers;
 public class CombinedSerializer : ISerializer
 {
     private const int LargeSizeThreshold = 1024 * 1024 * 10;
+    private readonly SerializationConfig _config;
     private readonly ISerializer _defaultSerializer;
     private readonly IStreamSerializer _streamSerializer;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="CombinedSerializer" /> class.
     /// </summary>
-    /// <param name="defaultSerializer">The default serializer to use for non-stream-based serialization.</param>
-    /// <param name="streamSerializer">The stream-based serializer for handling stream input/output.</param>
-    public CombinedSerializer(ISerializer defaultSerializer, IStreamSerializer streamSerializer)
+    public CombinedSerializer(SerializationConfig config)
     {
-        _defaultSerializer = defaultSerializer ?? throw new ArgumentNullException(nameof(defaultSerializer));
-        _streamSerializer = streamSerializer ?? throw new ArgumentNullException(nameof(streamSerializer));
+        ArgumentNullException.ThrowIfNull(config);
+        _config = config;
+
+        var tempDefaultSerializerInstance = CreateProvider(config.SerializerType!);
+        if (tempDefaultSerializerInstance is not ISerializer instance)
+            throw new InvalidOperationException("Default serializer must implement ISerializer.");
+        _defaultSerializer = instance;
+
+        var tempStreamSerializerInstance = CreateProvider(config.StreamSerializerType!);
+        if (tempStreamSerializerInstance is not IStreamSerializer serializer)
+            throw new InvalidOperationException("Stream serializer must implement IStreamSerializer.");
+        _streamSerializer = serializer;
     }
 
     /// <summary>
@@ -56,5 +66,13 @@ public class CombinedSerializer : ISerializer
             return await _defaultSerializer.DeserializeAsync<T>(data, cancellationToken).ConfigureAwait(false);
         var memoryStream = new MemoryStream(data);
         return await _streamSerializer.DeserializeAsync<T>(memoryStream, cancellationToken).ConfigureAwait(false);
+    }
+
+    private object CreateProvider(Type providerType)
+    {
+        var constructor = providerType.GetConstructor(new[] { typeof(SerializationConfig) })
+                          ?? throw new InvalidOperationException(
+                              $"No suitable constructor found for {providerType.FullName}.");
+        return constructor.Invoke(new object[] { _config });
     }
 }

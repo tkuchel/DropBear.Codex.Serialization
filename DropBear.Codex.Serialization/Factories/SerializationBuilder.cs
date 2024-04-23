@@ -39,16 +39,75 @@ public class SerializationBuilder
     }
 
     /// <summary>
-    ///     Specifies the serialization provider to use.
+    ///     Specifies the serialization provider type to use.
     /// </summary>
-    /// <param name="provider">The serialization provider instance.</param>
+    /// <param name="serializerType">The type of the serialization provider.</param>
     /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithSerializer(ISerializer provider)
+    public SerializationBuilder WithSerializer(Type serializerType)
     {
-        _config.SerializerType = provider.GetType();
+        if (serializerType == null)
+            throw new ArgumentNullException(nameof(serializerType), "Serializer type cannot be null.");
+
+        if (!typeof(ISerializer).IsAssignableFrom(serializerType))
+            throw new ArgumentException("The type must implement the ISerializer interface.", nameof(serializerType));
+
+        _config.SerializerType = serializerType;
         return this;
     }
 
+    /// <summary>
+    ///     Specifies the compression provider type to use.
+    /// </summary>
+    /// <param name="compressionType">The type of the compression provider.</param>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithCompression(Type compressionType)
+    {
+        if (compressionType == null)
+            throw new ArgumentNullException(nameof(compressionType), "Compression provider type cannot be null.");
+
+        if (!typeof(ICompressionProvider).IsAssignableFrom(compressionType))
+            throw new ArgumentException("The type must implement the ICompressionProvider interface.",
+                nameof(compressionType));
+
+        _config.CompressionProviderType = compressionType;
+        return this;
+    }
+
+    /// <summary>
+    ///     Specifies the encoding provider type to use.
+    /// </summary>
+    /// <param name="encodingType">The type of the encoding provider.</param>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithEncoding(Type encodingType)
+    {
+        if (encodingType == null)
+            throw new ArgumentNullException(nameof(encodingType), "Encoding provider type cannot be null.");
+
+        if (!typeof(IEncodingProvider).IsAssignableFrom(encodingType))
+            throw new ArgumentException("The type must implement the IEncodingProvider interface.",
+                nameof(encodingType));
+
+        _config.EncodingProviderType = encodingType;
+        return this;
+    }
+
+    /// <summary>
+    ///     Specifies the encryption provider type to use.
+    /// </summary>
+    /// <param name="encryptionType">The type of the encryption provider.</param>
+    /// <returns>The serialization builder instance.</returns>
+    public SerializationBuilder WithEncryption(Type encryptionType)
+    {
+        if (encryptionType == null)
+            throw new ArgumentNullException(nameof(encryptionType), "Encryption provider type cannot be null.");
+
+        if (!typeof(IEncryptionProvider).IsAssignableFrom(encryptionType))
+            throw new ArgumentException("The type must implement the IEncryptionProvider interface.",
+                nameof(encryptionType));
+
+        _config.EncryptionProviderType = encryptionType;
+        return this;
+    }
 
     /// <summary>
     ///     Specifies the stream serializer instance to use.
@@ -73,17 +132,6 @@ public class SerializationBuilder
     }
 
     /// <summary>
-    ///     Specifies the compression provider to use.
-    /// </summary>
-    /// <param name="provider">The compression provider instance.</param>
-    /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithCompression(ICompressionProvider provider)
-    {
-        _config.CompressionProviderType = provider.GetType();
-        return this;
-    }
-
-    /// <summary>
     ///     Specifies the encoding provider to use.
     /// </summary>
     /// <typeparam name="T">The type of encoding provider.</typeparam>
@@ -91,17 +139,6 @@ public class SerializationBuilder
     public SerializationBuilder WithEncoding<T>() where T : IEncodingProvider
     {
         _config.EncodingProviderType = typeof(T);
-        return this;
-    }
-
-    /// <summary>
-    ///     Specifies the encoding provider to use.
-    /// </summary>
-    /// <param name="provider">The type of encoding provider.</param>
-    /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithEncoding(IEncodingProvider provider)
-    {
-        _config.EncodingProviderType = provider.GetType();
         return this;
     }
 
@@ -126,18 +163,6 @@ public class SerializationBuilder
         _config.PublicKeyPath = publicKeyPath;
         _config.PrivateKeyPath = privateKeyPath;
 
-        return this;
-    }
-
-
-    /// <summary>
-    ///     Specifies the encryption provider to use.
-    /// </summary>
-    /// <param name="encryptionProvider">The encryption provider instance.</param>
-    /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithEncryption(IEncryptionProvider encryptionProvider)
-    {
-        _config.EncryptionProviderType = encryptionProvider.GetType();
         return this;
     }
 
@@ -240,7 +265,6 @@ public class SerializationBuilder
         // Create and return the serializer using the configured settings
         return SerializerFactory.CreateSerializer(_config);
     }
-
     private void ValidateSerializerConfigurations()
     {
         if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions is null)
