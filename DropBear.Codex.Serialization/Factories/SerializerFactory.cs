@@ -37,10 +37,8 @@ public abstract class SerializerFactory
     {
         var serializerType =
             s_config?.SerializerType ?? throw new InvalidOperationException("Serializer type not set.");
-        if (!RegisteredSerializers.TryGetValue(serializerType, out var concreteType))
-            throw new InvalidOperationException($"No registered serializer found for type {serializerType.Name}.");
 
-        return InstantiateSerializer(concreteType);
+        return InstantiateSerializer(RegisteredSerializers.GetValueOrDefault(serializerType, serializerType));
     }
 
     private static ISerializer InstantiateSerializer(Type serializerType)
