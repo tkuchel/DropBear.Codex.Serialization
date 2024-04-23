@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
 using Microsoft.IO;
 
@@ -16,30 +15,30 @@ public class SerializationConfig
     public Type? SerializerType { get; set; }
 
     /// <summary>
-    ///     Gets or sets the compression provider for serialization.
+    ///     Gets or sets the type of compression provider for serialization.
     /// </summary>
-    public ICompressionProvider? CompressionProvider { get; set; }
+    public Type? CompressionProviderType { get; set; }
 
     /// <summary>
-    ///     Gets or sets the encoding provider for serialization.
+    ///     Gets or sets the type of encoding provider for serialization.
     /// </summary>
-    public IEncodingProvider? EncodingProvider { get; set; }
+    public Type? EncodingProviderType { get; set; }
 
     /// <summary>
-    ///     Gets or sets the encryption provider for serialization.
+    ///     Gets or sets the type of encryption provider for serialization.
     /// </summary>
-    public IEncryptionProvider? EncryptionProvider { get; set; }
+    public Type? EncryptionProviderType { get; set; }
 
     /// <summary>
     ///     Gets or sets the memory stream manager for serialization.
     /// </summary>
     public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; set; } = new();
-    
+
 
     /// <summary>
-    ///     Gets or sets the stream serializer for serialization.
+    ///     Gets or sets the type of stream serializer for serialization.
     /// </summary>
-    public IStreamSerializer? StreamSerializer { get; set; }
+    public Type? StreamSerializerType { get; set; }
 
     /// <summary>
     ///     Gets or sets the JSON serializer options.
@@ -50,4 +49,14 @@ public class SerializationConfig
     ///     Gets or sets the MessagePack serializer options.
     /// </summary>
     public MessagePackSerializerOptions? MessagePackSerializerOptions { get; set; }
+    
+    /// <summary>
+    ///   Gets or sets the path to the public key file.
+    /// </summary>
+    public string PublicKeyPath { get; set; } = string.Empty;
+    
+    /// <summary>
+    ///  Gets or sets the path to the private key file.
+    /// </summary>
+    public string PrivateKeyPath { get; set; } = string.Empty;
 }

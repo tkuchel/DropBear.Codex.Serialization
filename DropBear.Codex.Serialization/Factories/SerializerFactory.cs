@@ -1,128 +1,85 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.Versioning;
 using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Interfaces;
 using DropBear.Codex.Serialization.Serializers;
 
 namespace DropBear.Codex.Serialization.Factories;
 
-/// <summary>
-///     Factory class for creating serializers based on provided configuration.
-/// </summary>
+[SupportedOSPlatform("windows")]
 public abstract class SerializerFactory
 {
+#pragma warning disable MA0015
     internal static readonly ConcurrentDictionary<Type, Type> RegisteredSerializers = new();
+    private static SerializationConfig? s_config;
 
-    /// <summary>
-    ///     Creates a serializer based on the provided configuration.
-    /// </summary>
-    /// <param name="config">The serialization configuration.</param>
-    /// <returns>An instance of <see cref="ISerializer" />.</returns>
-    public static ISerializer CreateSerializer(SerializationConfig config)
+    public static ISerializer CreateSerializer(SerializationConfig? config)
     {
-        // Validate configuration before processing
-        ValidateConfiguration(config);
+        s_config = config ?? throw new ArgumentNullException(nameof(config), "Configuration must be provided.");
+        ValidateConfiguration();
 
-        // First, create the base serializer according to the specified type
-        var serializer = CreateBaseSerializer(config);
-
-        // Apply transformations in the correct order
-        serializer = ApplyCompression(serializer, config);
-        serializer = ApplyEncryption(serializer, config);
-        serializer = ApplyEncoding(serializer, config);
-
-        return serializer;
+        var serializer = CreateBaseSerializer();
+        serializer = ApplyCompression(serializer);
+        serializer = ApplyEncryption(serializer);
+        return ApplyEncoding(serializer);
     }
 
-    private static void ValidateConfiguration(SerializationConfig config)
+    private static void ValidateConfiguration()
     {
-        if (config.SerializerType is null)
-            throw new ArgumentException("Serializer type must be specified.", nameof(config));
-        if (config.RecyclableMemoryStreamManager is null)
-            throw new ArgumentException("RecyclableMemoryStreamManager must be specified.", nameof(config));
+        if (s_config?.SerializerType == null)
+            throw new ArgumentException("Serializer type must be specified.", nameof(s_config.SerializerType));
+        if (s_config.RecyclableMemoryStreamManager is null)
+            throw new ArgumentException("RecyclableMemoryStreamManager must be specified.",
+                nameof(s_config.RecyclableMemoryStreamManager));
     }
 
-    private static ISerializer CreateBaseSerializer(SerializationConfig config)
+    private static ISerializer CreateBaseSerializer()
     {
-        if(config.SerializerType is null)
-            throw new ArgumentException("Serializer type must be specified.", nameof(config));
-        
-        if(config.RecyclableMemoryStreamManager is null)
-            throw new ArgumentException("RecyclableMemoryStreamManager must be specified.", nameof(config));
-        
-        if (!RegisteredSerializers.TryGetValue(config.SerializerType, out var serializerType))
-            return CreateBuiltInSerializer(config);
+        var serializerType =
+            s_config?.SerializerType ?? throw new InvalidOperationException("Serializer type not set.");
+        if (!RegisteredSerializers.TryGetValue(serializerType, out var concreteType))
+            throw new InvalidOperationException($"No registered serializer found for type {serializerType.Name}.");
 
-        var serializer = (ISerializer)Activator.CreateInstance(serializerType, config.RecyclableMemoryStreamManager)!;
-        if (serializer is null)
-            throw new InvalidOperationException("Failed to create serializer instance.");
-
-        return serializer;
+        return InstantiateSerializer(concreteType);
     }
 
-    private static ISerializer ApplyCompression(ISerializer serializer, SerializationConfig config)
+    private static ISerializer InstantiateSerializer(Type serializerType)
     {
-        if (config.CompressionProvider is null) return serializer;
-        var compressor = config.CompressionProvider.GetCompressor();
+        var constructor = serializerType.GetConstructor(new[] { typeof(SerializationConfig) })
+                          ?? throw new InvalidOperationException(
+                              $"No suitable constructor found for {serializerType.FullName}.");
+        if (s_config is not null) return (ISerializer)constructor.Invoke(new object[] { s_config });
+        throw new InvalidOperationException("Configuration must be provided.");
+    }
+
+    private static ISerializer ApplyCompression(ISerializer serializer)
+    {
+        if (s_config?.CompressionProviderType == null) return serializer;
+        var compressor = (ICompressionProvider)CreateProvider(s_config.CompressionProviderType);
         return new CompressedSerializer(serializer, compressor);
     }
 
-    private static ISerializer ApplyEncryption(ISerializer serializer, SerializationConfig config)
+    private static ISerializer ApplyEncryption(ISerializer serializer)
     {
-        if (config.EncryptionProvider is null) return serializer;
-        var encryptor = config.EncryptionProvider.GetEncryptor();
+        if (s_config?.EncryptionProviderType == null) return serializer;
+        var encryptor = (IEncryptionProvider)CreateProvider(s_config.EncryptionProviderType);
         return new EncryptedSerializer(serializer, encryptor);
     }
 
-    private static ISerializer ApplyEncoding(ISerializer serializer, SerializationConfig config)
+    private static ISerializer ApplyEncoding(ISerializer serializer)
     {
-        if (config.EncodingProvider is null) return serializer;
-        var encodingProvider = config.EncodingProvider;
-        return new EncodedSerializer(serializer, encodingProvider);
+        if (s_config?.EncodingProviderType == null) return serializer;
+        var encoder = (IEncodingProvider)CreateProvider(s_config.EncodingProviderType);
+        return new EncodedSerializer(serializer, encoder);
     }
 
-        private static ISerializer CreateBuiltInSerializer(SerializationConfig config)
+    private static object CreateProvider(Type providerType)
     {
-        // First, check if a StreamSerializer is specified in the config
-        if (config.StreamSerializer is not null)
-        {
-            // Assume StreamSerializer is correctly set to an instance of IStreamSerializer
-            return new StreamSerializerAdapter(config.StreamSerializer);
-        }
-
-        // Proceed with creating a serializer based on the SerializerType
-        switch (config.SerializerType)
-        {
-            case { } t when t == typeof(JsonSerializer):
-                if (config.JsonSerializerOptions is not null)
-                {
-                    var jsonStreamSerializer = new JsonStreamSerializer(config.JsonSerializerOptions);
-                    return new StreamSerializerAdapter(jsonStreamSerializer);
-                }
-
-                break;
-
-            case { } t when t == typeof(MessagePackSerializer):
-                if (config.MessagePackSerializerOptions is not null)
-                    return new MessagePackSerializer(config.MessagePackSerializerOptions,
-                        config.RecyclableMemoryStreamManager);
-                break;
-
-            case { } t when t == typeof(CombinedSerializer):
-                if (config.JsonSerializerOptions is not null)
-                {
-                    var defaultSerializer = new Serializers.JsonSerializer(config.JsonSerializerOptions,
-                        config.RecyclableMemoryStreamManager);
-                    var streamSerializer = new JsonStreamSerializer(config.JsonSerializerOptions);
-                    return new CombinedSerializer(defaultSerializer, streamSerializer);
-                }
-
-                break;
-
-            default:
-                throw new ArgumentException("Invalid serializer type specified.", nameof(config));
-        }
-
-        throw new ArgumentException("Serializer options must be specified for the selected serializer type.",
-            nameof(config));
+        var constructor = providerType.GetConstructor(new[] { typeof(SerializationConfig) })
+                          ?? throw new InvalidOperationException(
+                              $"No suitable constructor found for {providerType.FullName}.");
+        if (s_config is not null) return constructor.Invoke(new object[] { s_config });
+        throw new InvalidOperationException("Configuration must be provided.");
     }
+#pragma warning restore MA0015
 }

@@ -14,11 +14,11 @@ namespace DropBear.Codex.Serialization.Serializers
         /// Initializes a new instance of the <see cref="EncryptedSerializer"/> class.
         /// </summary>
         /// <param name="innerSerializer">The inner serializer.</param>
-        /// <param name="encryptor">The encryptor to use for encryption and decryption.</param>
-        public EncryptedSerializer(ISerializer innerSerializer, IEncryptor encryptor)
+        /// <param name="encryptionProvider">The encryption provider to use for encryption and decryption.</param>
+        public EncryptedSerializer(ISerializer innerSerializer, IEncryptionProvider encryptionProvider)
         {
             _innerSerializer = innerSerializer;
-            _encryptor = encryptor;
+            _encryptor = encryptionProvider.GetEncryptor();
         }
 
         /// <inheritdoc/>

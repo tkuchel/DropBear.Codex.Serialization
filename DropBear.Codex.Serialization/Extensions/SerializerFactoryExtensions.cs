@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Text.Json;
 using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Factories;
@@ -8,9 +9,10 @@ using MessagePack.Resolvers;
 
 namespace DropBear.Codex.Serialization.Extensions;
 
+[SupportedOSPlatform("windows")]
 public static class SerializerFactoryExtensions
 {
-    #pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0060 // Remove unused parameter
     public static void RegisterSerializer<T>(this SerializerFactory factory) where T : ISerializer =>
         SerializerFactory.RegisteredSerializers.TryAdd(typeof(T), typeof(T));
 
@@ -49,7 +51,8 @@ public static class SerializerFactoryExtensions
     {
         var providerType = providerTypeSelector();
         if (!typeof(ICompressionProvider).IsAssignableFrom(providerType))
-            throw new ArgumentException("Selected type does not implement ICompressionProvider", nameof(providerTypeSelector));
+            throw new ArgumentException("Selected type does not implement ICompressionProvider",
+                nameof(providerTypeSelector));
 
         if (Activator.CreateInstance(providerType) is not ICompressionProvider providerInstance)
             throw new InvalidOperationException("Failed to create an instance of the compression provider.");
@@ -63,7 +66,8 @@ public static class SerializerFactoryExtensions
     {
         var providerType = providerTypeSelector();
         if (!typeof(IEncryptionProvider).IsAssignableFrom(providerType))
-            throw new ArgumentException("Selected type does not implement IEncryptionProvider", nameof(providerTypeSelector));
+            throw new ArgumentException("Selected type does not implement IEncryptionProvider",
+                nameof(providerTypeSelector));
 
         IEncryptionProvider? providerInstance;
         try
@@ -84,7 +88,8 @@ public static class SerializerFactoryExtensions
 
     public static bool ValidateConfiguration(this SerializationConfig config) =>
         // Implement validation logic, e.g., check all required settings are not null.
-        config.SerializerType is not null && config.EncodingProvider is not null && (config.CompressionProvider is not null || config.EncryptionProvider is not null);
-    
-    #pragma warning restore IDE0060 // Remove unused parameter
+        config.SerializerType is not null && config.EncodingProviderType is not null &&
+        (config.CompressionProviderType is not null || config.EncryptionProviderType is not null);
+
+#pragma warning restore IDE0060 // Remove unused parameter
 }

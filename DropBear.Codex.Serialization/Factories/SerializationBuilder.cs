@@ -17,6 +17,7 @@ namespace DropBear.Codex.Serialization.Factories;
 /// <summary>
 ///     Builder class for configuring serialization settings.
 /// </summary>
+[SupportedOSPlatform("windows")]
 public class SerializationBuilder
 {
     private readonly SerializationConfig _config;
@@ -54,9 +55,9 @@ public class SerializationBuilder
     /// </summary>
     /// <typeparam name="T">The type of stream serializer.</typeparam>
     /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithStreamSerializer<T>() where T : IStreamSerializer, new()
+    public SerializationBuilder WithStreamSerializer<T>() where T : IStreamSerializer
     {
-        _config.StreamSerializer = new T();
+        _config.StreamSerializerType = typeof(T);
         return this;
     }
 
@@ -65,9 +66,9 @@ public class SerializationBuilder
     /// </summary>
     /// <typeparam name="T">The type of compression provider.</typeparam>
     /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithCompression<T>() where T : ICompressionProvider, new()
+    public SerializationBuilder WithCompression<T>() where T : ICompressionProvider
     {
-        _config.CompressionProvider = new T();
+        _config.CompressionProviderType = typeof(T);
         return this;
     }
 
@@ -78,7 +79,7 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithCompression(ICompressionProvider provider)
     {
-        _config.CompressionProvider = provider;
+        _config.CompressionProviderType = provider.GetType();
         return this;
     }
 
@@ -87,9 +88,9 @@ public class SerializationBuilder
     /// </summary>
     /// <typeparam name="T">The type of encoding provider.</typeparam>
     /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithEncoding<T>() where T : IEncodingProvider, new()
+    public SerializationBuilder WithEncoding<T>() where T : IEncodingProvider
     {
-        _config.EncodingProvider = new T();
+        _config.EncodingProviderType = typeof(T);
         return this;
     }
 
@@ -100,36 +101,34 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithEncoding(IEncodingProvider provider)
     {
-        _config.EncodingProvider = provider;
+        _config.EncodingProviderType = provider.GetType();
         return this;
     }
 
     /// <summary>
-    ///     Specifies the encryption provider to use.
+    ///     Specifies the encryption provider to use by setting the paths to the public and private keys.
     /// </summary>
     /// <param name="publicKeyPath">The path to the public key file.</param>
     /// <param name="privateKeyPath">The path to the private key file.</param>
-    /// <returns>The serialization builder instance.</returns>
-    [SupportedOSPlatform("windows")]
-    public SerializationBuilder WithAesgcmEncryption(string publicKeyPath, string privateKeyPath)
+    /// <returns>The builder with updated key paths, if the keys exist.</returns>
+    /// <exception cref="FileNotFoundException">Thrown if either the public or private key file does not exist.</exception>
+    public SerializationBuilder WithKeys(string publicKeyPath, string privateKeyPath)
     {
-        _config.EncryptionProvider = new AESGCMEncryptionProvider(publicKeyPath, privateKeyPath);
+        // Verify that the public key file exists
+        if (!File.Exists(publicKeyPath))
+            throw new FileNotFoundException($"Public key file not found at path: {publicKeyPath}");
+
+        // Verify that the private key file exists
+        if (!File.Exists(privateKeyPath))
+            throw new FileNotFoundException($"Private key file not found at path: {privateKeyPath}");
+
+        // Both files exist, update the configuration
+        _config.PublicKeyPath = publicKeyPath;
+        _config.PrivateKeyPath = privateKeyPath;
+
         return this;
     }
 
-    /// <summary>
-    ///     Specifies the encryption provider to use.
-    /// </summary>
-    /// <param name="publicKeyPath">The path to the public key file.</param>
-    /// <param name="privateKeyPath">The path to the private key file.</param>
-    /// <returns>The serialization builder instance.</returns>
-    [SupportedOSPlatform("windows")]
-    public SerializationBuilder WithAescngEncryption(string publicKeyPath, string privateKeyPath)
-    {
-        _config.EncryptionProvider =
-            new AESCNGEncryptionProvider(_config.RecyclableMemoryStreamManager, publicKeyPath, privateKeyPath);
-        return this;
-    }
 
     /// <summary>
     ///     Specifies the encryption provider to use.
@@ -138,7 +137,7 @@ public class SerializationBuilder
     /// <returns>The serialization builder instance.</returns>
     public SerializationBuilder WithEncryption(IEncryptionProvider encryptionProvider)
     {
-        _config.EncryptionProvider = encryptionProvider;
+        _config.EncryptionProviderType = encryptionProvider.GetType();
         return this;
     }
 
@@ -153,7 +152,7 @@ public class SerializationBuilder
         _config.JsonSerializerOptions = options;
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies the JSON serializer options to use.
     /// </summary>
@@ -171,8 +170,9 @@ public class SerializationBuilder
             ReferenceHandler = ReferenceHandler.Preserve, // Preserve reference relationships
             MaxDepth = 64, // Set a maximum depth to avoid StackOverflowExceptions
             UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode, // Handle unknown types as JsonNode
-            Converters = {
-                new JsonStringEnumConverter(), // Use a converter for enums
+            Converters =
+            {
+                new JsonStringEnumConverter() // Use a converter for enums
                 // Add more custom converters here if needed
             }
         };
@@ -191,7 +191,7 @@ public class SerializationBuilder
         _config.MessagePackSerializerOptions = options;
         return this;
     }
-    
+
     /// <summary>
     ///     Specifies default MessagePack serializer options to use.
     /// </summary>
@@ -205,7 +205,7 @@ public class SerializationBuilder
                 StandardResolver.Instance
             ))
             .WithSecurity(MessagePackSecurity.UntrustedData);
-        
+
         _config.MessagePackSerializerOptions = options;
         return this;
     }
@@ -227,10 +227,10 @@ public class SerializationBuilder
         _config.SerializerType = _config.SerializerType switch
         {
             // Ensure that a serializer type or stream serializer is specified
-            null when _config.StreamSerializer is null => throw new InvalidOperationException(
+            null when _config.StreamSerializerType is null => throw new InvalidOperationException(
                 "No serializer type or stream serializer specified. Please specify one before building."),
             // Provide a default serializer if none is specified but a stream serializer is set
-            null when _config.StreamSerializer is not null => typeof(StreamSerializerAdapter),
+            null when _config.StreamSerializerType is not null => typeof(StreamSerializerAdapter),
             _ => _config.SerializerType
         };
 

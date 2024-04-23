@@ -14,11 +14,11 @@ namespace DropBear.Codex.Serialization.Serializers
         /// Initializes a new instance of the <see cref="CompressedSerializer"/> class.
         /// </summary>
         /// <param name="innerSerializer">The inner serializer.</param>
-        /// <param name="compressor">The compressor to use for compression and decompression.</param>
-        public CompressedSerializer(ISerializer innerSerializer, ICompressor compressor)
+        /// <param name="compressionProvider">The compression provider to use for compression and decompression.</param>
+        public CompressedSerializer(ISerializer innerSerializer, ICompressionProvider compressionProvider)
         {
             _innerSerializer = innerSerializer;
-            _compressor = compressor;
+            _compressor = compressionProvider.GetCompressor();
         }
 
         /// <inheritdoc/>
