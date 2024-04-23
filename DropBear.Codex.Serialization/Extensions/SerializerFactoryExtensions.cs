@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using System.Text.Json;
 using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Factories;
@@ -12,7 +11,7 @@ namespace DropBear.Codex.Serialization.Extensions;
 [SupportedOSPlatform("windows")]
 public static class SerializerFactoryExtensions
 {
-    public static void RegisterSerializer<T>(this SerializerFactory factory) where T : ISerializer =>
+    public static void RegisterSerializer<T>() where T : ISerializer =>
         SerializerFactory.RegisteredSerializers.TryAdd(typeof(T), typeof(T));
 
     public static void RegisterSerializer<TSerializer, TImplementation>()
@@ -20,7 +19,7 @@ public static class SerializerFactoryExtensions
         where TImplementation : class, TSerializer =>
         SerializerFactory.RegisteredSerializers.TryAdd(typeof(TSerializer), typeof(TImplementation));
 
-    public static void UnregisterSerializer<T>(this SerializerFactory factory) where T : ISerializer =>
+    public static void UnregisterSerializer<T>() where T : ISerializer =>
         SerializerFactory.RegisteredSerializers.TryRemove(typeof(T), out _);
 
     public static SerializationBuilder WithDefaultJsonOptions(this SerializationBuilder builder,
@@ -36,12 +35,6 @@ public static class SerializerFactoryExtensions
         var options = MessagePackSerializerOptions.Standard;
         if (resolverEnabled) options = options.WithResolver(StandardResolver.Instance);
         return builder.WithMessagePackSerializerOptions(options);
-    }
-
-    public static void DebugRegisteredSerializers(this SerializerFactory factory)
-    {
-        foreach (var entry in SerializerFactory.RegisteredSerializers)
-            Debug.WriteLine($"Registered: {entry.Key.Name} as {entry.Value.Name}");
     }
 
     public static SerializationBuilder WithAdaptiveCompression(this SerializationBuilder builder,
