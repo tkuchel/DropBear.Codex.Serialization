@@ -1,6 +1,10 @@
-﻿using System.IO.Compression;
+﻿#region
+
+using System.IO.Compression;
 using DropBear.Codex.Serialization.Interfaces;
 using Microsoft.IO;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Compression;
 
@@ -14,7 +18,10 @@ public class GZipCompressor : ICompressor
     /// <summary>
     ///     Initializes a new instance of the <see cref="GZipCompressor" /> class.
     /// </summary>
-    public GZipCompressor() => _memoryStreamManager = new RecyclableMemoryStreamManager();
+    public GZipCompressor()
+    {
+        _memoryStreamManager = new RecyclableMemoryStreamManager();
+    }
 #pragma warning disable MA0004
     /// <inheritdoc />
     public async Task<byte[]> CompressAsync(byte[] data, CancellationToken cancellationToken = default)
@@ -23,7 +30,8 @@ public class GZipCompressor : ICompressor
         await using var compressedStream = _memoryStreamManager.GetStream("GZipCompressor-Compress");
         await using (compressedStream)
         {
-            await using var zipStream = new GZipStream(compressedStream, CompressionMode.Compress, false); // Set leaveOpen to false
+            await using var
+                zipStream = new GZipStream(compressedStream, CompressionMode.Compress, false); // Set leaveOpen to false
             await zipStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
             await zipStream.FlushAsync(cancellationToken); // Flush the stream to ensure all data is written
             compressedStream.Position = 0; // Reset position to read the stream content

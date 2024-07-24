@@ -1,14 +1,13 @@
-﻿namespace DropBear.Codex.Serialization.Interfaces
+﻿namespace DropBear.Codex.Serialization.Interfaces;
+
+/// <summary>
+///     Interface for compression providers.
+/// </summary>
+public interface ICompressionProvider
 {
     /// <summary>
-    /// Interface for compression providers.
+    ///     Get an instance of the compressor.
     /// </summary>
-    public interface ICompressionProvider
-    {
-        /// <summary>
-        /// Get an instance of the compressor.
-        /// </summary>
-        /// <returns>An instance of the compressor.</returns>
-        ICompressor GetCompressor();
-    }
+    /// <returns>An instance of the compressor.</returns>
+    ICompressor GetCompressor();
 }

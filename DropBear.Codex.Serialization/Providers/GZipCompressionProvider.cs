@@ -1,17 +1,23 @@
-﻿using DropBear.Codex.Serialization.Compression;
+﻿#region
+
+using DropBear.Codex.Serialization.Compression;
 using DropBear.Codex.Serialization.Interfaces;
 
-namespace DropBear.Codex.Serialization.Providers
+#endregion
+
+namespace DropBear.Codex.Serialization.Providers;
+
+/// <summary>
+///     Provides GZip compression services.
+/// </summary>
+public class GZipCompressionProvider : ICompressionProvider
 {
     /// <summary>
-    /// Provides GZip compression services.
+    ///     Gets a GZip compressor.
     /// </summary>
-    public class GZipCompressionProvider : ICompressionProvider
+    /// <returns>A GZip compressor.</returns>
+    public ICompressor GetCompressor()
     {
-        /// <summary>
-        /// Gets a GZip compressor.
-        /// </summary>
-        /// <returns>A GZip compressor.</returns>
-        public ICompressor GetCompressor() => new GZipCompressor();
+        return new GZipCompressor();
     }
 }

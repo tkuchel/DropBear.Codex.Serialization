@@ -1,8 +1,12 @@
-﻿using DropBear.Codex.Serialization.Configurations;
+﻿#region
+
+using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Exceptions;
 using DropBear.Codex.Serialization.Interfaces;
 using MessagePack;
 using Microsoft.IO;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Serializers;
 
@@ -20,7 +24,9 @@ public class MessagePackSerializer : ISerializer
     public MessagePackSerializer(SerializationConfig config)
     {
         if (config is null)
+        {
             throw new ArgumentNullException(nameof(config), "Configuration must be provided.");
+        }
 
         _options = config.MessagePackSerializerOptions ?? MessagePackSerializerOptions.Standard;
 #pragma warning disable CA2208
@@ -48,8 +54,11 @@ public class MessagePackSerializer : ISerializer
         catch (MessagePackSerializationException ex)
         {
             if (ex.InnerException is FormatterNotRegisteredException)
+            {
                 throw new SerializationException(
                     "Error occurred while serializing data. Ensure all types are registered.", ex);
+            }
+
             throw new SerializationException("Error occurred while serializing data.", ex);
         }
         catch (Exception ex)

@@ -1,17 +1,23 @@
-﻿using DropBear.Codex.Serialization.Compression;
+﻿#region
+
+using DropBear.Codex.Serialization.Compression;
 using DropBear.Codex.Serialization.Interfaces;
 
-namespace DropBear.Codex.Serialization.Providers
+#endregion
+
+namespace DropBear.Codex.Serialization.Providers;
+
+/// <summary>
+///     Provides Deflate compression services.
+/// </summary>
+public class DeflateCompressionProvider : ICompressionProvider
 {
     /// <summary>
-    /// Provides Deflate compression services.
+    ///     Gets a Deflate compressor.
     /// </summary>
-    public class DeflateCompressionProvider : ICompressionProvider
+    /// <returns>A Deflate compressor.</returns>
+    public ICompressor GetCompressor()
     {
-        /// <summary>
-        /// Gets a Deflate compressor.
-        /// </summary>
-        /// <returns>A Deflate compressor.</returns>
-        public ICompressor GetCompressor() => new DeflateCompressor();
+        return new DeflateCompressor();
     }
 }

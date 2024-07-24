@@ -1,14 +1,13 @@
-﻿namespace DropBear.Codex.Serialization.Interfaces
+﻿namespace DropBear.Codex.Serialization.Interfaces;
+
+/// <summary>
+///     Interface for encoding providers.
+/// </summary>
+public interface IEncodingProvider
 {
     /// <summary>
-    /// Interface for encoding providers.
+    ///     Gets an encoder.
     /// </summary>
-    public interface IEncodingProvider
-    {
-        /// <summary>
-        /// Gets an encoder.
-        /// </summary>
-        /// <returns>An instance of an encoder.</returns>
-        IEncoder GetEncoder();
-    }
+    /// <returns>An instance of an encoder.</returns>
+    IEncoder GetEncoder();
 }

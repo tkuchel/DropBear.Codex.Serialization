@@ -1,5 +1,9 @@
-﻿using DropBear.Codex.Serialization.Configurations;
+﻿#region
+
+using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Interfaces;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Serializers;
 
@@ -24,12 +28,18 @@ public class CombinedSerializer : ISerializer
 
         var tempDefaultSerializerInstance = CreateProvider(config.SerializerType!);
         if (tempDefaultSerializerInstance is not ISerializer instance)
+        {
             throw new InvalidOperationException("Default serializer must implement ISerializer.");
+        }
+
         _defaultSerializer = instance;
 
         var tempStreamSerializerInstance = CreateProvider(config.StreamSerializerType!);
         if (tempStreamSerializerInstance is not IStreamSerializer serializer)
+        {
             throw new InvalidOperationException("Stream serializer must implement IStreamSerializer.");
+        }
+
         _streamSerializer = serializer;
     }
 
@@ -45,7 +55,10 @@ public class CombinedSerializer : ISerializer
     {
         // Example condition: Use stream serializer if T is Stream or similar logic
         if (value is not Stream streamValue)
+        {
             return await _defaultSerializer.SerializeAsync(value, cancellationToken).ConfigureAwait(false);
+        }
+
         var memoryStream = new MemoryStream();
         await _streamSerializer.SerializeAsync(memoryStream, streamValue, cancellationToken).ConfigureAwait(false);
         return memoryStream.ToArray();
@@ -63,7 +76,10 @@ public class CombinedSerializer : ISerializer
     {
         // Example condition: Use stream serializer if expected type is Stream or based on data size, etc.
         if (typeof(T) != typeof(Stream) && data.Length <= LargeSizeThreshold)
+        {
             return await _defaultSerializer.DeserializeAsync<T>(data, cancellationToken).ConfigureAwait(false);
+        }
+
         var memoryStream = new MemoryStream(data);
         return await _streamSerializer.DeserializeAsync<T>(memoryStream, cancellationToken).ConfigureAwait(false);
     }

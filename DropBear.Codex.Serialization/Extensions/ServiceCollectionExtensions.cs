@@ -1,6 +1,10 @@
-﻿using System.Runtime.Versioning;
+﻿#region
+
+using System.Runtime.Versioning;
 using DropBear.Codex.Serialization.Factories;
 using Microsoft.Extensions.DependencyInjection;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Extensions;
 

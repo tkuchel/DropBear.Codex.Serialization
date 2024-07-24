@@ -1,29 +1,32 @@
-﻿using System.Text.Json;
+﻿#region
+
+using System.Text.Json;
 using DropBear.Codex.Serialization.Interfaces;
 
-namespace DropBear.Codex.Serialization.Writers
+#endregion
+
+namespace DropBear.Codex.Serialization.Writers;
+
+/// <summary>
+///     Implementation of <see cref="ISerializerReader" /> for JSON serialization.
+/// </summary>
+public class JsonSerializerReader : ISerializerReader
 {
+    private readonly JsonSerializerOptions _options;
+
     /// <summary>
-    /// Implementation of <see cref="ISerializerReader"/> for JSON serialization.
+    ///     Initializes a new instance of the <see cref="JsonSerializerReader" /> class with the specified options.
     /// </summary>
-    public class JsonSerializerReader : ISerializerReader
+    /// <param name="options">The JSON serializer options.</param>
+    public JsonSerializerReader(JsonSerializerOptions options)
     {
-        private readonly JsonSerializerOptions _options;
+        _options = options;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="JsonSerializerReader"/> class with the specified options.
-        /// </summary>
-        /// <param name="options">The JSON serializer options.</param>
-        public JsonSerializerReader(JsonSerializerOptions options)
-        {
-            _options = options;
-        }
-
-        /// <inheritdoc/>
-        public async Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
-        {
-            return await JsonSerializer.DeserializeAsync<T>(stream, _options, cancellationToken)
-                .ConfigureAwait(false) ?? default;
-        }
+    /// <inheritdoc />
+    public async Task<T?> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+    {
+        return await JsonSerializer.DeserializeAsync<T>(stream, _options, cancellationToken)
+            .ConfigureAwait(false) ?? default;
     }
 }

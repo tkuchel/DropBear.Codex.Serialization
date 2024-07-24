@@ -1,47 +1,50 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <Version>2024.4.0</Version>
-        <Title>DropBear.Codex.Serialization</Title>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Authors>Terrence Kuchel (DropBear)</Authors>
-        <Description>This project provides advanced serialization and deserialization capabilities, supporting formats like JSON, MessagePack, and MemoryPack. It includes performance optimizations, error handling, and supports compression and encoding options.</Description>
-        <Copyright>2024 Terrence Kuchel</Copyright>
-        <PackageProjectUrl>https://github.com/tkuchel/DropBear.Codex.Serialization</PackageProjectUrl>
-        <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
-        <RepositoryUrl>https://github.com/tkuchel/DropBear.Codex.Serialization</RepositoryUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <RepositoryType>Git</RepositoryType>
-     </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>2024.7.0</Version>
+    <Title>DropBear.Codex.Serialization</Title>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Terrence Kuchel (DropBear)</Authors>
+    <Description>This project provides advanced serialization and deserialization capabilities, supporting formats like JSON, MessagePack, and MemoryPack. It includes performance optimizations, error handling, and supports compression and encoding options.</Description>
+    <Copyright>2024 Terrence Kuchel</Copyright>
+    <PackageProjectUrl>https://github.com/tkuchel/DropBear.Codex.Serialization</PackageProjectUrl>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/tkuchel/DropBear.Codex.Serialization</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryType>Git</RepositoryType>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="DropBear.Codex.Core" Version="2024.4.5" />
-      <PackageReference Include="MessagePack" Version="2.5.140" />
-      <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.123">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.0" />
-      <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DropBear.Codex.Core" Version="2024.7.1"/>
+    <PackageReference Include="MessagePack" Version="2.5.171"/>
+    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.125">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1"/>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0"/>
+    <PackageReference Update="Nerdbank.GitVersioning">
+      <Version>3.6.139</Version>
+    </PackageReference>
+  </ItemGroup>
 
-    <ItemGroup>
-        <None Include="README.md" Pack="true" PackagePath="\"/>
-    </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 
-    <ItemGroup>
-        <AdditionalFiles Include="BannedSymbols.txt" />
-    </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="BannedSymbols.txt"/>
+  </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Attributes\" />
-      <Folder Include="Enums\" />
-    </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Attributes\"/>
+    <Folder Include="Enums\"/>
+  </ItemGroup>
 </Project>

@@ -1,5 +1,9 @@
-﻿using System.Text;
+﻿#region
+
+using System.Text;
 using DropBear.Codex.Serialization.Interfaces;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Encoders;
 
@@ -31,7 +35,9 @@ public class HexEncoder : IEncoder
         _ = hexString ?? throw new ArgumentNullException(nameof(hexString), "Hexadecimal string cannot be null.");
 
         if (hexString.Length % 2 is not 0)
+        {
             throw new ArgumentException("Hexadecimal string must have an even length", nameof(hexString));
+        }
 
         var bytes = new byte[hexString.Length / 2];
         for (var i = 0; i < bytes.Length; i++)

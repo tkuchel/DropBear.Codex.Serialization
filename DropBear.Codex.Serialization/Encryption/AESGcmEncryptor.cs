@@ -1,5 +1,9 @@
-﻿using System.Security.Cryptography;
+﻿#region
+
+using System.Security.Cryptography;
 using DropBear.Codex.Serialization.Interfaces;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Encryption;
 
@@ -61,7 +65,7 @@ public class AesGcmEncryptor : IEncryptor, IDisposable
         var encryptedKey = data.Take(keySizeBytes).ToArray();
         var encryptedNonce = data.Skip(keySizeBytes).Take(keySizeBytes).ToArray();
         var tag = data.Skip(2 * keySizeBytes).Take(AesGcm.TagByteSizes.MaxSize).ToArray();
-        var ciphertext = data.Skip(2 * keySizeBytes + tag.Length).ToArray();
+        var ciphertext = data.Skip((2 * keySizeBytes) + tag.Length).ToArray();
 
         _key = _rsa.Decrypt(encryptedKey, RSAEncryptionPadding.OaepSHA256);
         var nonce = _rsa.Decrypt(encryptedNonce, RSAEncryptionPadding.OaepSHA256);

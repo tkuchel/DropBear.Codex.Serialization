@@ -1,7 +1,11 @@
-﻿using System.IO.Compression;
+﻿#region
+
+using System.IO.Compression;
 using DropBear.Codex.Serialization.Exceptions;
 using DropBear.Codex.Serialization.Interfaces;
 using Microsoft.IO;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Compression;
 
@@ -15,13 +19,18 @@ public class DeflateCompressor : ICompressor
     /// <summary>
     ///     Initializes a new instance of the <see cref="DeflateCompressor" /> class.
     /// </summary>
-    public DeflateCompressor() => _memoryStreamManager = new RecyclableMemoryStreamManager();
+    public DeflateCompressor()
+    {
+        _memoryStreamManager = new RecyclableMemoryStreamManager();
+    }
 #pragma warning disable MA0004 // Use ConfigureAwait
     /// <inheritdoc />
     public async Task<byte[]> CompressAsync(byte[] data, CancellationToken cancellationToken = default)
     {
         if (data is null)
+        {
             throw new ArgumentNullException(nameof(data), "Input data cannot be null.");
+        }
 
         await using var compressedStream = _memoryStreamManager.GetStream("DeflateCompressor-Compress");
         try
@@ -42,9 +51,12 @@ public class DeflateCompressor : ICompressor
     public async Task<byte[]> DecompressAsync(byte[] compressedData, CancellationToken cancellationToken = default)
     {
         if (compressedData is null)
+        {
             throw new ArgumentNullException(nameof(compressedData), "Compressed data cannot be null.");
+        }
 
-        await using var compressedStream = _memoryStreamManager.GetStream("DeflateCompressor-Decompress-Input", compressedData);
+        await using var compressedStream =
+            _memoryStreamManager.GetStream("DeflateCompressor-Decompress-Input", compressedData);
         await using var decompressedStream = _memoryStreamManager.GetStream("DeflateCompressor-Decompress-Output");
 
         try

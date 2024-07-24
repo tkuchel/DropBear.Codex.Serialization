@@ -1,4 +1,8 @@
-﻿using DropBear.Codex.Serialization.Interfaces;
+﻿#region
+
+using DropBear.Codex.Serialization.Interfaces;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Serializers;
 
@@ -9,7 +13,10 @@ public class StreamSerializerAdapter : ISerializer
 {
     private readonly IStreamSerializer _streamSerializer;
 
-    public StreamSerializerAdapter(IStreamSerializer streamSerializer) => _streamSerializer = streamSerializer;
+    public StreamSerializerAdapter(IStreamSerializer streamSerializer)
+    {
+        _streamSerializer = streamSerializer;
+    }
 
     public async Task<byte[]> SerializeAsync<T>(T value, CancellationToken cancellationToken = default)
     {

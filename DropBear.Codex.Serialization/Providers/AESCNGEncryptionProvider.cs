@@ -1,9 +1,13 @@
-﻿using System.Runtime.Versioning;
+﻿#region
+
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Encryption;
 using DropBear.Codex.Serialization.Interfaces;
 using Microsoft.IO;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Providers;
 
@@ -32,5 +36,8 @@ public class AESCNGEncryptionProvider : IEncryptionProvider
     /// </summary>
     /// <returns>An AES encryptor.</returns>
     [SupportedOSPlatform("windows")]
-    public IEncryptor GetEncryptor() => new AESCNGEncryptor(_rsa, _memoryStreamManager);
+    public IEncryptor GetEncryptor()
+    {
+        return new AESCNGEncryptor(_rsa, _memoryStreamManager);
+    }
 }

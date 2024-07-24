@@ -1,4 +1,6 @@
-﻿using System.Runtime.Versioning;
+﻿#region
+
+using System.Runtime.Versioning;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,6 +13,8 @@ using MessagePack.ImmutableCollection;
 using MessagePack.Resolvers;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using MessagePackSerializer = MessagePack.MessagePackSerializer;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Factories;
 
@@ -25,7 +29,10 @@ public class SerializationBuilder
     /// <summary>
     ///     Initializes a new instance of the <see cref="SerializationBuilder" /> class.
     /// </summary>
-    public SerializationBuilder() => _config = new SerializationConfig();
+    public SerializationBuilder()
+    {
+        _config = new SerializationConfig();
+    }
 
     /// <summary>
     ///     Specifies the serializer type to use.
@@ -46,10 +53,14 @@ public class SerializationBuilder
     public SerializationBuilder WithSerializer(Type serializerType)
     {
         if (serializerType == null)
+        {
             throw new ArgumentNullException(nameof(serializerType), "Serializer type cannot be null.");
+        }
 
         if (!typeof(ISerializer).IsAssignableFrom(serializerType))
+        {
             throw new ArgumentException("The type must implement the ISerializer interface.", nameof(serializerType));
+        }
 
         _config.SerializerType = serializerType;
         return this;
@@ -63,11 +74,15 @@ public class SerializationBuilder
     public SerializationBuilder WithCompression(Type compressionType)
     {
         if (compressionType == null)
+        {
             throw new ArgumentNullException(nameof(compressionType), "Compression provider type cannot be null.");
+        }
 
         if (!typeof(ICompressionProvider).IsAssignableFrom(compressionType))
+        {
             throw new ArgumentException("The type must implement the ICompressionProvider interface.",
                 nameof(compressionType));
+        }
 
         _config.CompressionProviderType = compressionType;
         return this;
@@ -81,11 +96,15 @@ public class SerializationBuilder
     public SerializationBuilder WithEncoding(Type encodingType)
     {
         if (encodingType == null)
+        {
             throw new ArgumentNullException(nameof(encodingType), "Encoding provider type cannot be null.");
+        }
 
         if (!typeof(IEncodingProvider).IsAssignableFrom(encodingType))
+        {
             throw new ArgumentException("The type must implement the IEncodingProvider interface.",
                 nameof(encodingType));
+        }
 
         _config.EncodingProviderType = encodingType;
         return this;
@@ -99,11 +118,15 @@ public class SerializationBuilder
     public SerializationBuilder WithEncryption(Type encryptionType)
     {
         if (encryptionType == null)
+        {
             throw new ArgumentNullException(nameof(encryptionType), "Encryption provider type cannot be null.");
+        }
 
         if (!typeof(IEncryptionProvider).IsAssignableFrom(encryptionType))
+        {
             throw new ArgumentException("The type must implement the IEncryptionProvider interface.",
                 nameof(encryptionType));
+        }
 
         _config.EncryptionProviderType = encryptionType;
         return this;
@@ -153,11 +176,15 @@ public class SerializationBuilder
     {
         // Verify that the public key file exists
         if (!File.Exists(publicKeyPath))
+        {
             throw new FileNotFoundException($"Public key file not found at path: {publicKeyPath}");
+        }
 
         // Verify that the private key file exists
         if (!File.Exists(privateKeyPath))
+        {
             throw new FileNotFoundException($"Private key file not found at path: {privateKeyPath}");
+        }
 
         // Both files exist, update the configuration
         _config.PublicKeyPath = publicKeyPath;
@@ -239,9 +266,11 @@ public class SerializationBuilder
     ///     Sets up a typical configuration that might be a good starting point.
     /// </summary>
     /// <returns>The serialization builder instance.</returns>
-    public SerializationBuilder WithDefaultConfiguration() =>
-        WithJsonSerializerOptions(new JsonSerializerOptions { WriteIndented = true })
+    public SerializationBuilder WithDefaultConfiguration()
+    {
+        return WithJsonSerializerOptions(new JsonSerializerOptions { WriteIndented = true })
             .WithCompression<GZipCompressionProvider>();
+    }
 
     /// <summary>
     ///     Builds the serializer based on the configured settings.
@@ -265,13 +294,18 @@ public class SerializationBuilder
         // Create and return the serializer using the configured settings
         return SerializerFactory.CreateSerializer(_config);
     }
+
     private void ValidateSerializerConfigurations()
     {
         if (_config.SerializerType == typeof(JsonSerializer) && _config.JsonSerializerOptions is null)
+        {
             throw new InvalidOperationException("JsonSerializerOptions must be specified for JsonSerializer.");
+        }
 
         if (_config.SerializerType == typeof(MessagePackSerializer) && _config.MessagePackSerializerOptions is null)
+        {
             throw new InvalidOperationException(
                 "MessagePackSerializerOptions must be specified for MessagePackSerializer.");
+        }
     }
 }

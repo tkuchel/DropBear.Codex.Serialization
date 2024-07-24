@@ -1,8 +1,12 @@
-﻿using System.Runtime.Versioning;
+﻿#region
+
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Encryption;
 using DropBear.Codex.Serialization.Interfaces;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Providers;
 
@@ -28,5 +32,8 @@ public class AESGCMEncryptionProvider : IEncryptionProvider
     ///     Gets an AES-GCM encryptor using RSA encryption.
     /// </summary>
     /// <returns>An AES-GCM encryptor using RSA encryption.</returns>
-    public IEncryptor GetEncryptor() => new AesGcmEncryptor(_rsa);
+    public IEncryptor GetEncryptor()
+    {
+        return new AesGcmEncryptor(_rsa);
+    }
 }

@@ -1,7 +1,11 @@
-﻿using System.Runtime.Versioning;
+﻿#region
+
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using static System.Security.Cryptography.ProtectedData;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Providers;
 

@@ -1,17 +1,23 @@
-﻿using DropBear.Codex.Serialization.Encoders;
+﻿#region
+
+using DropBear.Codex.Serialization.Encoders;
 using DropBear.Codex.Serialization.Interfaces;
 
-namespace DropBear.Codex.Serialization.Providers
+#endregion
+
+namespace DropBear.Codex.Serialization.Providers;
+
+/// <summary>
+///     Provides hexadecimal encoding services.
+/// </summary>
+public class HexEncodingProvider : IEncodingProvider
 {
     /// <summary>
-    /// Provides hexadecimal encoding services.
+    ///     Gets a hexadecimal encoder.
     /// </summary>
-    public class HexEncodingProvider : IEncodingProvider
+    /// <returns>A hexadecimal encoder.</returns>
+    public IEncoder GetEncoder()
     {
-        /// <summary>
-        /// Gets a hexadecimal encoder.
-        /// </summary>
-        /// <returns>A hexadecimal encoder.</returns>
-        public IEncoder GetEncoder() => new HexEncoder();
+        return new HexEncoder();
     }
 }

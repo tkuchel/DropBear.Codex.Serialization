@@ -1,6 +1,10 @@
-﻿using System.Text.Json;
+﻿#region
+
+using System.Text.Json;
 using MessagePack;
 using Microsoft.IO;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Configurations;
 
@@ -49,14 +53,14 @@ public class SerializationConfig
     ///     Gets or sets the MessagePack serializer options.
     /// </summary>
     public MessagePackSerializerOptions? MessagePackSerializerOptions { get; set; }
-    
+
     /// <summary>
-    ///   Gets or sets the path to the public key file.
+    ///     Gets or sets the path to the public key file.
     /// </summary>
     public string PublicKeyPath { get; set; } = string.Empty;
-    
+
     /// <summary>
-    ///  Gets or sets the path to the private key file.
+    ///     Gets or sets the path to the private key file.
     /// </summary>
     public string PrivateKeyPath { get; set; } = string.Empty;
 }

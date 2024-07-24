@@ -1,5 +1,9 @@
-﻿using System.Text.Json;
+﻿#region
+
+using System.Text.Json;
 using DropBear.Codex.Serialization.Interfaces;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Serializers;
 
@@ -14,7 +18,10 @@ public class JsonStreamSerializer : IStreamSerializer
     ///     Initializes a new instance of the <see cref="JsonStreamSerializer" /> class with the specified options.
     /// </summary>
     /// <param name="options">The JSON serializer options.</param>
-    public JsonStreamSerializer(JsonSerializerOptions options) => _options = options;
+    public JsonStreamSerializer(JsonSerializerOptions options)
+    {
+        _options = options;
+    }
 
     /// <summary>
     ///     Serializes an object to a JSON format and writes it to a provided stream.
@@ -24,9 +31,11 @@ public class JsonStreamSerializer : IStreamSerializer
     /// <param name="value">The object to serialize.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async Task SerializeAsync<T>(Stream stream, T value, CancellationToken cancellationToken = default) =>
+    public async Task SerializeAsync<T>(Stream stream, T value, CancellationToken cancellationToken = default)
+    {
         await System.Text.Json.JsonSerializer.SerializeAsync(stream, value, _options, cancellationToken)
             .ConfigureAwait(false);
+    }
 
     /// <summary>
     ///     Deserializes JSON data from a stream into an object of type T.
@@ -35,9 +44,10 @@ public class JsonStreamSerializer : IStreamSerializer
     /// <param name="stream">The input stream to read the JSON data from.</param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>A task that represents the asynchronous operation and returns the deserialized object.</returns>
-    public async Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default) =>
-        (await System.Text.Json.JsonSerializer.DeserializeAsync<T>(stream, _options, cancellationToken)
-             .ConfigureAwait(false) ??
-         default(T)) ?? throw new InvalidOperationException("Failed to deserialize JSON stream data.");
-
+    public async Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+    {
+        return (await System.Text.Json.JsonSerializer.DeserializeAsync<T>(stream, _options, cancellationToken)
+                    .ConfigureAwait(false) ??
+                default(T)) ?? throw new InvalidOperationException("Failed to deserialize JSON stream data.");
+    }
 }

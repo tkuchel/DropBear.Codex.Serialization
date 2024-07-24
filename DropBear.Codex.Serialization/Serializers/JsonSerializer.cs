@@ -1,8 +1,12 @@
-﻿using System.Text.Json;
+﻿#region
+
+using System.Text.Json;
 using DropBear.Codex.Serialization.Configurations;
 using DropBear.Codex.Serialization.Exceptions;
 using DropBear.Codex.Serialization.Interfaces;
 using Microsoft.IO;
+
+#endregion
 
 namespace DropBear.Codex.Serialization.Serializers;
 
@@ -20,7 +24,9 @@ public class JsonSerializer : ISerializer
     public JsonSerializer(SerializationConfig config)
     {
         if (config is null)
+        {
             throw new ArgumentNullException(nameof(config), "Configuration must be provided.");
+        }
 
         _options = config.JsonSerializerOptions ?? new JsonSerializerOptions();
 #pragma warning disable CA2208
